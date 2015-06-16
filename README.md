@@ -13,7 +13,8 @@ Main differentiators to NetIQ’s driver:
 * Publisher channel supports interruption (driver stop command) during file processing.
 * Publisher channel can add metadata about the file or record processed (eg: record number, filename, last record indicator, etc).
 
-The original version I wrote in 2007 is located at http://www.novell.com/coolsolutions/tools/18671.html. This update comes with an IDM 4 package making the installation simpler and has some new features and fixes (see below).
+The original version I wrote in 2007 is located at http://www.novell.com/coolsolutions/tools/18671.html. Latest manual jar/package release was posted on https://www.netiq.com/communities/cool-solutions/cool_tools/generic-file-driver-idm-v-003/.
+
 
 See the referenced version for a list of the initial features.
 
