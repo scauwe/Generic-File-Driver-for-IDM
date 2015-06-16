@@ -86,11 +86,13 @@ __Shim: GenFileDriverShim_0.7.jar__
 Copy the shim to you eDirectory server (DirXML’s classes folder). If you want to use XLS support, also download poi from Apache. Restart eDirectory after this.
 
 __Note__: if you have an older version of the shim, be sure to delete that jar.
+
 __Package: SVCGENFILEB_0.0.6.20140508075632.jar__
 Import this package into your designer project. Drag and drop the “Delimited Text” driver that is located under “Tools” and select the “Generic File Base” package, answering all the questions as needed.
 From this point on, you can use and modify it as any other driver.
 
-__lib folder__:
+__lib folder__
+
 This folder contains some optional jars. These are only required if you plan to use quartz scheduler to close the generated files using a cron-like string. Jars required when doing this are: quartz-2.2.1.jar, slf4j-api-1.7.5.jar and slf4j-idmTrace.jar.
 
 ## Policies
