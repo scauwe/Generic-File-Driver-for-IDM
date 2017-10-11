@@ -20,7 +20,6 @@
 package info.vancauwenberge.filedriver;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
@@ -30,38 +29,38 @@ import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
 public class Build {
-	
-	/** The build of your driver. */
-    public static final String BUILD_NO;
 
-    /** The version of your driver. */
+	/** The build of your driver. */
+	public static final String BUILD_NO;
+
+	/** The version of your driver. */
 	static public final String PRODUCT_VERSION;
-	
+
 	/** Your company name. */
 	static public final String COMPANY_NAME;
-	
+
 	/** The name of your driver. */
 	static public final String PRODUCT_NAME;
-	
+
 	static{
-		Class<Build> clazz = Build.class;
-		String className = clazz.getSimpleName() + ".class";
+		final Class<Build> clazz = Build.class;
+		final String className = clazz.getSimpleName() + ".class";
 		Manifest manifest = null;
 		try {
-			URLConnection connection = clazz.getResource(className).openConnection();
+			final URLConnection connection = clazz.getResource(className).openConnection();
 			if (connection instanceof JarURLConnection){
 				manifest = ((JarURLConnection)connection).getManifest();
 			}else{
 				// Class not from JAR, but from the file system.
-				String classPath = clazz.getResource(className).toString();
-				String packageName = clazz.getPackage().getName();
-				String manifestPath = classPath.substring(0, classPath.length()-className.length()-packageName.length()-1) + "META-INF" + File.separatorChar + "MANIFEST.MF";
+				final String classPath = clazz.getResource(className).toString();
+				final String packageName = clazz.getPackage().getName();
+				final String manifestPath = classPath.substring(0, classPath.length()-className.length()-packageName.length()-1) + "META-INF" + File.separatorChar + "MANIFEST.MF";
 				manifest = new Manifest(new URL(manifestPath).openStream());
 			}
-		} catch (Exception e1) {
+		} catch (final Exception e1) {
 			e1.printStackTrace();
 		}
-		Attributes attr  = manifest==null?null:manifest.getMainAttributes();
+		final Attributes attr  = manifest==null?null:manifest.getMainAttributes();
 		BUILD_NO = getAttribute("Built-Date",attr);
 		PRODUCT_VERSION = getProductVersion(BUILD_NO,getAttribute("Implementation-Version",attr));
 		COMPANY_NAME  = getAttribute("Implementation-Vendor",attr);
@@ -70,11 +69,12 @@ public class Build {
 	/*
 	 * Get an attribute from the manifest, or unknown if no manifest is defined.
 	 */
-	private static String getAttribute(String name, Attributes attr ){
+	private static String getAttribute(final String name, final Attributes attr ){
 		if (attr!= null){
-			String value = attr.getValue(name);
-			if (value != null)
+			final String value = attr.getValue(name);
+			if (value != null) {
 				return value;
+			}
 		}
 		return "unknown";
 	}
@@ -85,14 +85,14 @@ public class Build {
 	 * @param productVesion
 	 * @return
 	 */
-	private static String getProductVersion(String buildNo, String productVesion) {
-		SimpleDateFormat fromDf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	private static String getProductVersion(final String buildNo, final String productVesion) {
+		final SimpleDateFormat fromDf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		fromDf.setTimeZone(TimeZone.getTimeZone("UTC"));
-		SimpleDateFormat toDf = new SimpleDateFormat("yyyyMMddHHmm");
+		final SimpleDateFormat toDf = new SimpleDateFormat("yyyyMMddHHmm");
 		toDf.setTimeZone(TimeZone.getTimeZone("UTC"));
 		try{
 			return productVesion+"."+toDf.format(fromDf.parse(buildNo));
-		}catch (Exception e) {
+		}catch (final Exception e) {
 			e.printStackTrace();
 			return productVesion;
 		}
