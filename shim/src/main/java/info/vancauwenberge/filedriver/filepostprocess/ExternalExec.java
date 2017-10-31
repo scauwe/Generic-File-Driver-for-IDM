@@ -61,7 +61,7 @@ public class ExternalExec extends AbstractStrategy implements IPostProcessStrate
 			return false;
 		}
 	}
-	public enum Parameters implements IStrategyParameters{
+	enum Parameters implements IStrategyParameters{
 		/**
 		 * Close the file after <i>nnn</i> seconds of inactivity
 		 */
