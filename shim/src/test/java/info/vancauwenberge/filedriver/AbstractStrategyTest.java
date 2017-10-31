@@ -1,4 +1,4 @@
-package test.info.vancauwenberge.filedriver;
+package info.vancauwenberge.filedriver;
 
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;

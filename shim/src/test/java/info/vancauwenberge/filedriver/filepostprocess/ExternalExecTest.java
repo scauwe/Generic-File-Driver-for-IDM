@@ -1,4 +1,4 @@
-package test.info.vancauwenberge.filedriver.filepostprocess;
+package info.vancauwenberge.filedriver.filepostprocess;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -15,12 +15,11 @@ import org.mockito.Mock;
 
 import com.novell.nds.dirxml.driver.Trace;
 
+import info.vancauwenberge.filedriver.AbstractStrategyTest;
+import info.vancauwenberge.filedriver.ParamMap;
 import info.vancauwenberge.filedriver.api.IDriver;
 import info.vancauwenberge.filedriver.api.ISubscriberShim;
-import info.vancauwenberge.filedriver.filepostprocess.ExternalExec;
 import info.vancauwenberge.filedriver.shim.ConnectionInfo;
-import test.info.vancauwenberge.filedriver.AbstractStrategyTest;
-import test.info.vancauwenberge.filedriver.ParamMap;
 
 public class ExternalExecTest extends AbstractStrategyTest{
 	@Mock(answer=Answers.RETURNS_MOCKS)

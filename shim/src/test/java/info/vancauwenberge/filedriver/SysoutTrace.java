@@ -1,4 +1,4 @@
-package test.info.vancauwenberge.filedriver;
+package info.vancauwenberge.filedriver;
 
 import com.novell.nds.dirxml.driver.TraceInterface;
 import com.novell.nds.dirxml.driver.XmlDocument;

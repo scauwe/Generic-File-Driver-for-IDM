@@ -1,4 +1,4 @@
-package test.info.vancauwenberge.filedriver;
+package info.vancauwenberge.filedriver;
 
 import java.util.HashMap;
 
