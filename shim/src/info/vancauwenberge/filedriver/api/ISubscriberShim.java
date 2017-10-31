@@ -20,6 +20,7 @@
 package info.vancauwenberge.filedriver.api;
 
 import info.vancauwenberge.filedriver.exception.WriteException;
+import info.vancauwenberge.filedriver.shim.ConnectionInfo;
 
 public interface ISubscriberShim {
 	/**
@@ -55,4 +56,9 @@ public interface ISubscriberShim {
 	 * @param listener
 	 */
 	public void removeFileListener(ISubscriberFileListener listener);
+	/**
+	 * Returns a data wrapper holding the configured connection information.
+	 * @return
+	 */
+	public ConnectionInfo getConnectionInfo();
 }
