@@ -20,16 +20,6 @@
 
 package info.vancauwenberge.filedriver.filestart;
 
-import info.vancauwenberge.filedriver.api.AbstractStrategy;
-import info.vancauwenberge.filedriver.api.IDriver;
-import info.vancauwenberge.filedriver.api.IFileStartStrategy;
-import info.vancauwenberge.filedriver.api.IShutdown;
-import info.vancauwenberge.filedriver.api.ISubscriberFileListener;
-import info.vancauwenberge.filedriver.api.ISubscriberShim;
-import info.vancauwenberge.filedriver.exception.WriteException;
-import info.vancauwenberge.filedriver.util.TraceLevel;
-import info.vancauwenberge.filedriver.util.Util;
-
 import java.util.Date;
 import java.util.Map;
 import java.util.Properties;
@@ -57,12 +47,22 @@ import com.novell.nds.dirxml.driver.xds.XDSResultDocument;
 import com.novell.nds.dirxml.driver.xds.util.StatusAttributes;
 import com.novell.nds.dirxml.driver.xds.util.XDSUtil;
 
+import info.vancauwenberge.filedriver.api.AbstractStrategy;
+import info.vancauwenberge.filedriver.api.IDriver;
+import info.vancauwenberge.filedriver.api.IFileStartStrategy;
+import info.vancauwenberge.filedriver.api.IShutdown;
+import info.vancauwenberge.filedriver.api.ISubscriberFileListener;
+import info.vancauwenberge.filedriver.api.ISubscriberShim;
+import info.vancauwenberge.filedriver.exception.WriteException;
+import info.vancauwenberge.filedriver.util.TraceLevel;
+import info.vancauwenberge.filedriver.util.Util;
+
 public class BasicNewFileDecider extends AbstractStrategy implements IFileStartStrategy,IShutdown,ISubscriberFileListener {
 	/**
 	 * positive seconds assumes that it needs to be converted to milliseconds, so it sets the max value
 	 * to MAX_VALUE/1000
 	 */
-    private static final RangeConstraint positiveSecondsRange = new RangeConstraint(0, (Integer.MAX_VALUE/1000));
+	private static final RangeConstraint positiveSecondsRange = new RangeConstraint(0, (Integer.MAX_VALUE/1000));
 
 	private class InactivityMonitor extends Thread{
 		boolean keepRunning = true;
@@ -70,7 +70,8 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 			setDaemon(true);
 			setName("InactivityMonitor");
 		}
-		
+
+		@Override
 		public void run(){
 			trace.trace("InactivityMonitor - Starting.",TraceLevel.TRACE);
 			synchronized(subscriber.getFileLock()){
@@ -79,26 +80,28 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 						trace.trace("InactivityMonitor - Waiting for "+(fileInactiveSaveInterval/1000)+" seconds of inactivity.",TraceLevel.TRACE);
 						subscriber.getFileLock().wait(fileInactiveSaveInterval);
 						trace.trace("InactivityMonitor - Awake after "+(fileInactiveSaveInterval/1000)+" seconds of inactivity.",TraceLevel.TRACE);
-						if (keepRunning && subscriber.finishFile())
+						if (keepRunning && subscriber.finishFile()) {
 							trace.trace("InactivityMonitor - Closed file after "+(fileInactiveSaveInterval/1000)+" seconds of inactivity.",TraceLevel.TRACE);
-					} catch (InterruptedException e) {
+						}
+					} catch (final InterruptedException e) {
 						trace.trace("InactivityMonitor - Interupted",TraceLevel.TRACE);
-					} catch (WriteException e) {
+					} catch (final WriteException e) {
 						trace.trace("InactivityMonitor - Unable to close file:"+e.getMessage(),TraceLevel.ERROR_WARN);
+						Util.printStackTrace(trace, e);
 					}
 				}
 			}
 		}
-		
+
 		public void notifyActivity(){
 			this.interrupt();
 		}
-		
+
 		public void killMonitor(){
 			keepRunning = false;
 			this.interrupt();
 		}
-		
+
 	}
 	private class MaxFileAgeMonitor extends Thread{
 
@@ -107,7 +110,8 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 			setDaemon(true);
 			setName("MaxFileAgeMonitor");
 		}
-		
+
+		@Override
 		public void run(){
 			trace.trace("MaxFileAgeMonitor - Starting.",TraceLevel.TRACE);
 			synchronized(subscriber.getFileLock()){
@@ -115,17 +119,19 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 					trace.trace("MaxFileAgeMonitor - Waiting for "+(maxFileAge/1000)+" seconds after cration.",TraceLevel.TRACE);
 					subscriber.getFileLock().wait(maxFileAge);
 					trace.trace("MaxFileAgeMonitor - Awake after "+(maxFileAge/1000)+" seconds after cration.",TraceLevel.TRACE);
-					if (subscriber.finishFile())
+					if (subscriber.finishFile()) {
 						trace.trace("MaxFileAgeMonitor - Closed file after "+(maxFileAge/1000)+" seconds of creation.",TraceLevel.TRACE);
-				} catch (InterruptedException e) {
+					}
+				} catch (final InterruptedException e) {
 					trace.trace("MaxFileAgeMonitor - Interupted",TraceLevel.TRACE);
-				} catch (WriteException e) {
+				} catch (final WriteException e) {
 					trace.trace("MaxFileAgeMonitor - Unable to close file:"+e.getMessage(),TraceLevel.ERROR_WARN);
+					Util.printStackTrace(trace, e);
 				}
 			}
 			trace.trace("MaxFileAgeMonitor - Stopped.",TraceLevel.TRACE);
 		};
-			
+
 		public void killMonitor(){
 			synchronized (this) {
 				this.interrupt();					
@@ -137,18 +143,22 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 		 * The file should not contain more then <i>nnn</i> records
 		 */
 		NEW_FILE_MAX_RECORDS{
+			@Override
 			public String getParameterName() {
 				return "newFile_MaxRecords";
 			}
 
+			@Override
 			public String getDefaultValue() {
 				return "100";
 			}
 
+			@Override
 			public DataType getDataType() {
 				return DataType.INT;
 			}
 
+			@Override
 			public Constraint[] getConstraints() {
 				return new Constraint[]{RangeConstraint.NON_NEGATIVE};
 			}
@@ -157,18 +167,22 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 		 * Close the file after <i>nnn</i> seconds of adding the first record
 		 */
 		NEW_FILE_MAX_FILE_AGE{
+			@Override
 			public String getParameterName() {
 				return "newFile_MaxFileAge";
 			}
 
+			@Override
 			public String getDefaultValue() {
 				return "60";
 			}
 
+			@Override
 			public DataType getDataType() {
 				return DataType.INT;
 			}
 
+			@Override
 			public Constraint[] getConstraints() {
 				return new Constraint[]{positiveSecondsRange};
 			}
@@ -177,18 +191,22 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 		 * Close the file after <i>nnn</i> seconds of inactivity
 		 */
 		NEW_FILE_INACTIVE_SAVE_INTERVAL{
+			@Override
 			public String getParameterName() {
 				return "newFile_InactiveSaveInterval";
 			}
 
+			@Override
 			public String getDefaultValue() {
 				return "0";
 			}
 
+			@Override
 			public DataType getDataType() {
 				return DataType.INT;
 			}
 
+			@Override
 			public Constraint[] getConstraints() {
 				return new Constraint[]{positiveSecondsRange};
 			}
@@ -197,18 +215,22 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 		 * Use given cron string to close the file 
 		 */
 		NEW_FILE_CRON_EXPRESSION{
+			@Override
 			public String getParameterName() {
 				return "newFile_CronExpression";
 			}
 
+			@Override
 			public String getDefaultValue() {
 				return "";
 			}
 
+			@Override
 			public DataType getDataType() {
 				return DataType.STRING;
 			}
 
+			@Override
 			public Constraint[] getConstraints() {
 				return null;
 			}
@@ -217,32 +239,40 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 		 * Field to manually indicate that a new file should be started or not
 		 */
 		NEW_FILE_FIELD{
+			@Override
 			public String getParameterName() {
 				return "newFile_FieldName";
 			}
 
+			@Override
 			public String getDefaultValue() {
 				return "";
 			}
 
+			@Override
 			public DataType getDataType() {
 				return DataType.STRING;
 			}
 
+			@Override
 			public Constraint[] getConstraints() {
 				return null;
 			}
 		};
 
+		@Override
 		public abstract String getParameterName();
+		@Override
 		public abstract String getDefaultValue();
+		@Override
 		public abstract DataType getDataType();
+		@Override
 		public abstract Constraint[] getConstraints();
-		
+
 	}
-	
-	
-	
+
+
+
 
 	private String fieldName;
 	private int maxRecordCount = 0;
@@ -255,11 +285,12 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 	private String cronExpression;
 	private Scheduler cronScheduler=null;
 	private Trace trace;
-	
+
 	/* (non-Javadoc)
 	 * @see info.vancauwenberge.filedriver.api.IStrategy#init(com.novell.nds.dirxml.driver.Trace, java.util.Map, info.vancauwenberge.filedriver.api.IDriver)
 	 */
-	public void init(final Trace trace, Map<String,Parameter> driverParams, IDriver driver) throws Exception {
+	@Override
+	public void init(final Trace trace, final Map<String,Parameter> driverParams, final IDriver driver) throws Exception {
 		this.trace = trace;
 
 		this.subscriber=driver.getSubscriber();
@@ -274,7 +305,7 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 		//driverParams.get(NEW_FILE_CRON_EXPRESSION).toString();
 		fieldName = getStringValueFor(Parameters.NEW_FILE_FIELD,driverParams);
 		//driverParams.get(NEW_FILE_FIELD).toString();
-		
+
 		//We can only initialize quartz when the rest is initialized.
 		initQuartz();
 		//Create file monitor if required:
@@ -284,12 +315,12 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 			if ((maxFileAge==0) | (fileInactiveSaveInterval<maxFileAge)){
 				fileInactivityMonitor = new InactivityMonitor();
 				fileInactivityMonitor.start();
-			}
-			else
+			} else {
 				trace.trace("Warn: file inactivity monitor set but not used since fileInactiveSaveInterval("+fileInactiveSaveInterval+") > maxFileAge("+maxFileAge+")", TraceLevel.ERROR_WARN);
+			}
 		}
 
-		
+
 		if (trace.getTraceLevel()>=TraceLevel.TRACE){
 			trace.trace("Initialization completed:", TraceLevel.TRACE);
 			trace.trace(" MaxRecordCount:"+maxRecordCount +((maxRecordCount==0)?"(disabled)":"(enabled)"), TraceLevel.TRACE);
@@ -298,11 +329,11 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 			trace.trace(" cronExpression:"+cronExpression, TraceLevel.TRACE);
 			trace.trace(" fieldName:"+fieldName, TraceLevel.TRACE);
 		}
-		
+
 
 	}
-	
-	
+
+
 	/*
 	 * Initialize the quartz schedular if needed
 	 */
@@ -310,38 +341,38 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 		if (cronScheduler == null){
 			//Trace trace = new Trace("");
 			trace.trace("Initializing quartz for cron (if required)",TraceLevel.TRACE);
-			
-			if (cronExpression != null && !"".equals(cronExpression.trim())){
+
+			if ((cronExpression != null) && !"".equals(cronExpression.trim())){
 				try{
 					trace.trace("Using cron string "+cronExpression,TraceLevel.TRACE);
-					CronTrigger cronTrigger = TriggerBuilder.newTrigger()
-						.withIdentity("GenFileDriverCrontrigger")
-						.withSchedule(CronScheduleBuilder.cronSchedule(cronExpression.trim()))
-						.build();
-					Properties props = new Properties();
+					final CronTrigger cronTrigger = TriggerBuilder.newTrigger()
+							.withIdentity("GenFileDriverCrontrigger")
+							.withSchedule(CronScheduleBuilder.cronSchedule(cronExpression.trim()))
+							.build();
+					final Properties props = new Properties();
 					props.put(StdSchedulerFactory.PROP_SCHED_MAKE_SCHEDULER_THREAD_DAEMON, "true");//"org.quartz.scheduler.makeSchedulerThreadDaemon"
 					props.put("org.quartz.threadPool.makeThreadsDaemons", "true");
 					props.put("org.quartz.threadPool.threadCount", "1");
-					String uniqueId = UUID.randomUUID().toString();
+					final String uniqueId = UUID.randomUUID().toString();
 					props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_NAME,uniqueId);//"org.quartz.scheduler.instanceName"
 					trace.trace("Creating Quartz schedular factory",TraceLevel.TRACE);
-					SchedulerFactory schFactory = new StdSchedulerFactory(props);
+					final SchedulerFactory schFactory = new StdSchedulerFactory(props);
 					cronScheduler = schFactory.getScheduler();
 					cronScheduler.start();
 
-					JobDataMap map = new JobDataMap();
+					final JobDataMap map = new JobDataMap();
 					map.put(ForceCloseJob.JOBMAP_SUBSCRIBER, subscriber);
 					map.put(ForceCloseJob.JOBMAP_BASICNEWFILEDECIDER, this);
 					trace.trace("Creating Quartz jobDetail",TraceLevel.TRACE);
-					JobDetail job = JobBuilder.newJob(ForceCloseJob.class)
-						.withIdentity("GenerifFileDriver_"+uniqueId)
-						.usingJobData(map)
-						.build();
+					final JobDetail job = JobBuilder.newJob(ForceCloseJob.class)
+							.withIdentity("GenerifFileDriver_"+uniqueId)
+							.usingJobData(map)
+							.build();
 
 					trace.trace("Scheduling Quartz cron job:",TraceLevel.TRACE);
 					cronScheduler.scheduleJob(job, cronTrigger);
 					trace.trace("Cron will trigger first on: "+cronTrigger.getFireTimeAfter(new Date()),TraceLevel.TRACE);
-				}catch(Exception e){
+				}catch(final Exception e){
 					trace.trace("Error initializing Quartz cron schedular:"+e.getClass()+"-"+e.getMessage(),TraceLevel.ERROR_WARN);
 					Util.printStackTrace(trace, e);
 					throw e;
@@ -352,12 +383,12 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 
 		}
 	}
-	
-	
+
+
 	/**
 	 * Reschedule the maximum file age monitor (stop the old monitor and start a new one).
 	 */
-/*	private void rescheduleMaxAgeMonitor(){
+	/*	private void rescheduleMaxAgeMonitor(){
 		//Only do something if fileInactiveSaveInterval is set (>0)
 		// and if the interval is smaller then the 'live' time of a file (fileSaveInterval)
 		if (maxFileAge>0){
@@ -387,7 +418,7 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 				maxFileAgeMonitor.start();
 			}
 		}
-		
+
 	}*/
 	/**
 	 * Reschedule the inactivity monitor (stop the old monitor and start a new one).
@@ -417,22 +448,23 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 							}
 						}
 					}
-				
+
 				};
 				fileInactivityMonitor.setDaemon(true);
 				fileInactivityMonitor.setName("FileInactivityMonitor");
 				fileInactivityMonitor.start();
 			}
 		}
-		
+
 	}*/
-	
-	
+
+
 	/* (non-Javadoc)
 	 * @see info.vancauwenberge.filedriver.api.INewFileDecider#requiresNewFile(com.novell.nds.dirxml.driver.Trace, java.util.Map)
 	 * Returns true when nnn records have been saved in the file (nnn=value of parameter NEW_FILE_MAX_RECORDS)
 	 */
-	public boolean requiresNewFile(Map<String,String> record) {
+	@Override
+	public boolean requiresNewFile(final Map<String,String> record) {
 		trace.trace("requiresNewFile?",TraceLevel.TRACE);
 		synchronized (subscriber.getFileLock()){
 			if (subscriber.getCurrentFileRecordCount()<=0){//always return true when no records have been saved yet!
@@ -441,7 +473,7 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 			}
 			else
 			{
-				String value = record.get(fieldName);
+				final String value = record.get(fieldName);
 				if (value!=null){//If we have a value, use that algorithm
 					if ("true".equals(value)){
 						trace.trace("Closing file after setting '"+fieldName+"' to 'true'.",TraceLevel.TRACE);
@@ -466,7 +498,7 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 			}
 		}
 	}
-	
+
 
 
 	public String getCronExpression() {
@@ -474,28 +506,32 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 	}
 
 
-	public void onShutdown(XDSResultDocument reasonXML) {
+	@Override
+	public void onShutdown(final XDSResultDocument reasonXML) {
 		subscriber.removeFileListener(this);
-		if (maxFileAgeMonitor!=null) //We had one before. Finish it.
+		if (maxFileAgeMonitor!=null) {
 			maxFileAgeMonitor.killMonitor();
-		if (fileInactivityMonitor!=null) //We had one before. Finish it.
+		}
+		if (fileInactivityMonitor!=null) {
 			fileInactivityMonitor.killMonitor();
-		
-		if (cronScheduler != null)
+		}
+
+		if (cronScheduler != null) {
 			try {
 				cronScheduler.shutdown();
-			} catch (SchedulerException e) {
-	            StatusAttributes attrs = StatusAttributes.factory(StatusLevel.FATAL,
-                        StatusType.DRIVER_STATUS,
-                        null); //event-id
-	            XDSUtil.appendStatus(reasonXML, //do to append to
-            attrs, //status attribute values
-            null, //description
-            e, //exception
-            true, //append stack trace?
-            null); //xml to append
+			} catch (final SchedulerException e) {
+				final StatusAttributes attrs = StatusAttributes.factory(StatusLevel.FATAL,
+						StatusType.DRIVER_STATUS,
+						null); //event-id
+				XDSUtil.appendStatus(reasonXML, //do to append to
+						attrs, //status attribute values
+						null, //description
+						e, //exception
+						true, //append stack trace?
+						null); //xml to append
 				Util.printStackTrace(new Trace(""), e);
 			}
+		}
 	}
 
 
@@ -509,23 +545,27 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 	 * (non-Javadoc)
 	 * @see info.vancauwenberge.filedriver.api.ISubscriberFileListener#afterFileOpened(info.vancauwenberge.filedriver.api.ISubscriberFileListener.FileEvent)
 	 */
-	public void afterFileOpened(FileEvent event) {
+	@Override
+	public void afterFileOpened(final FileEvent event) {
 		if (maxFileAge>0){
-			if (maxFileAgeMonitor!=null) //We had one before. Finish it.
+			if (maxFileAgeMonitor!=null) {
 				maxFileAgeMonitor.killMonitor();
+			}
 			maxFileAgeMonitor = new MaxFileAgeMonitor();
 			maxFileAgeMonitor.start();
 		}
-		
+
 	}
 
 	/*
 	 * (non-Javadoc)
 	 * @see info.vancauwenberge.filedriver.api.ISubscriberFileListener#afterFileClose(info.vancauwenberge.filedriver.api.ISubscriberFileListener.FileEvent)
 	 */
-	public void afterFileClose(FileEvent event) {
-		if (maxFileAgeMonitor!=null) //We had one before. Finish it.
+	@Override
+	public void afterFileClose(final FileEvent event) {
+		if (maxFileAgeMonitor!=null) {
 			maxFileAgeMonitor.killMonitor();
+		}
 	}
 
 
@@ -533,13 +573,15 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 	 * (non-Javadoc)
 	 * @see info.vancauwenberge.filedriver.api.ISubscriberFileListener#afterRecordAdded(info.vancauwenberge.filedriver.api.ISubscriberFileListener.FileEvent)
 	 */
-	public void afterRecordAdded(FileEvent event) {
+	@Override
+	public void afterRecordAdded(final FileEvent event) {
 		if ((maxRecordCount != 0) && (subscriber.getCurrentFileRecordCount() >= maxRecordCount)){
 			trace.trace(maxRecordCount + " records have been added. Trying to close the file.",TraceLevel.TRACE);
 			try {
-				if (subscriber.finishFile())
+				if (subscriber.finishFile()) {
 					trace.trace("Closed file after "+maxRecordCount+" records have been added.",TraceLevel.TRACE);
-			} catch (WriteException e) {
+				}
+			} catch (final WriteException e) {
 				Util.printStackTrace(trace, e);
 			}
 
@@ -547,8 +589,10 @@ public class BasicNewFileDecider extends AbstractStrategy implements IFileStartS
 	}
 
 
-	public void beforeRecordAdded(FileEvent event) {
-		if (fileInactivityMonitor!=null) //If we have a monitor, notify it of activity.
+	@Override
+	public void beforeRecordAdded(final FileEvent event) {
+		if (fileInactivityMonitor!=null) {
 			fileInactivityMonitor.notifyActivity();
+		}
 	}
 }

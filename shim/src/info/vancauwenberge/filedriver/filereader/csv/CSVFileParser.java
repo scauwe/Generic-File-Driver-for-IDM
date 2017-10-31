@@ -36,14 +36,14 @@ public class CSVFileParser {
 	private static final int FIELD_BEGIN = 0;
 	private static final int FIELD_QUOTED = 1;
 	private static final int FIELD_NORMAL = 2;
-	
+
 	private static final int CHAR_NORMAL = 0;
 	private static final int CHAR_ESCAPE = 1;
 
 	//fields
 	private boolean fileHeaderprocessed=false;
-	private boolean loadNodeNamesFromHeader;
-	private boolean skipEmptyLines;
+	private final boolean loadNodeNamesFromHeader;
+	private final boolean skipEmptyLines;
 	private int fieldStat = FIELD_BEGIN;
 	private int charStat = CHAR_NORMAL;
 	private int lineStat = LINE_BEGIN;
@@ -54,20 +54,21 @@ public class CSVFileParser {
 	//private String dataRecordTag;
 	private String[] dataRecordFields;
 	//private String headerRecordTag;
-	private String[] headerRecordFields;
+	private final String[] headerRecordFields;
 
 	private RecordQueue queue;
-	
+
 	//caching fields
 	//private String currentRecordTag;
-	private boolean hasHeader;
+	private final boolean hasHeader;
 
 	public void resetParser(){
 		synchronized (dataRecordFields) {
-			if (hasHeader)
+			if (hasHeader) {
 				fileHeaderprocessed=false;
-			else
+			} else {
 				fileHeaderprocessed=true;
+			}
 			dataRecordFields.notifyAll();
 		}
 		fieldStat = FIELD_BEGIN;
@@ -84,16 +85,16 @@ public class CSVFileParser {
 	 * @return
 	 * @throws java.text.ParseException
 	 */
-	public void doParse(Reader stream) throws java.text.ParseException, IOException{
-		StringBuffer aPart = new StringBuffer();
+	public void doParse(final Reader stream) throws java.text.ParseException, IOException{
+		final StringBuffer aPart = new StringBuffer();
 		int currentCharAsInt;
 		while((currentCharAsInt = stream.read()) != -1){
-			char currentChar = (char) currentCharAsInt;
+			final char currentChar = (char) currentCharAsInt;
 			if (lineStat == LINE_BEGIN) {
 				//Start a new node
-				if (currentChar == TOKEN_COMMENT)
+				if (currentChar == TOKEN_COMMENT) {
 					lineStat = LINE_COMMENT;
-				else {
+				} else {
 					fieldIndex = 0;
 					lineStat = doLineNormal(currentChar,aPart);
 				}
@@ -108,7 +109,7 @@ public class CSVFileParser {
 				}
 			}
 		}
-			
+
 		//if the file does not finish with a newline, save the last field and record
 		if (lineStat == LINE_NORMAL){
 			saveField(aPart);
@@ -116,24 +117,25 @@ public class CSVFileParser {
 		}
 		queue.setFinished();
 	}
-	
+
 	/**
 	 * Get the name of the field with the given index 
 	 * @param index
 	 * @return
 	 */
-	private String getFieldName(int index) {
-		if (index >= currentRecordFields.length)
+	private String getFieldName(final int index) {
+		if (index >= currentRecordFields.length) {
 			return ((fileHeaderprocessed)?"field":"header") + index;
+		}
 		return currentRecordFields[index];
 	}
 
 	/**
 	 * @param aPart
 	 */
-	private void saveCommentField(StringBuffer aPart) {
+	private void saveCommentField(final StringBuffer aPart) {
 		//Comments are not part of record
-/*		Comment comment = doc.createComment(aPart.toString());
+		/*		Comment comment = doc.createComment(aPart.toString());
 		doc.getFirstChild().appendChild(comment);*/
 		aPart.setLength(0);
 		lineStat = LINE_BEGIN;
@@ -143,24 +145,24 @@ public class CSVFileParser {
 	 * @param value
 	 * @param fieldIndex2
 	 */
-	private void saveHeaderName(String value, int fieldIndex) {
+	private void saveHeaderName(final String value, final int fieldIndex) {
 		if (dataRecordFields.length<=fieldIndex){
 			//increament the array
-			String[] newArray = new String[fieldIndex+1];
-			System.arraycopy((Object)dataRecordFields,0,(Object)newArray,0,fieldIndex);
+			final String[] newArray = new String[fieldIndex+1];
+			System.arraycopy(dataRecordFields,0,newArray,0,fieldIndex);
 			dataRecordFields = newArray;
 		}
-		
+
 		//TODO: make sure it is a valid name
 		dataRecordFields[fieldIndex] = value;
 	}
-	
-	
+
+
 	/**
 	 * Add the current buffer as a field in the xml document
 	 */
-	private void saveField(StringBuffer aPart) {
-		String value = aPart.toString();
+	private void saveField(final StringBuffer aPart) {
+		final String value = aPart.toString();
 		thisRecord.put(getFieldName(fieldIndex), value);
 		//If we need to load the tags from the header, save it as tag name if we are still processing the header
 		if (loadNodeNamesFromHeader & !fileHeaderprocessed){
@@ -181,28 +183,29 @@ public class CSVFileParser {
 			currentRecordFields = headerRecordFields;
 		}		
 	}
-	
-	
+
+
 	public String[] getCurrentSchema(){
 		synchronized (dataRecordFields) {
-			if (!fileHeaderprocessed)
+			if (!fileHeaderprocessed) {
 				try {
 					dataRecordFields.wait();
-				} catch (InterruptedException e) {
+				} catch (final InterruptedException e) {
 					e.printStackTrace();
 				}
+			}
 		}
 		return dataRecordFields;
 	}
-	
+
 	/**
 	 * @param c
 	 */
-	private int doLineNormal(char c,StringBuffer aPart) {
+	private int doLineNormal(final char c,final StringBuffer aPart) {
 		//We process a non-comment line
 		if (c == token_seperator) {//seperator
-			if (fieldStat == FIELD_NORMAL || fieldStat == FIELD_BEGIN
-					|| charStat == CHAR_ESCAPE) { //This ends the field
+			if ((fieldStat == FIELD_NORMAL) || (fieldStat == FIELD_BEGIN)
+					|| (charStat == CHAR_ESCAPE)) { //This ends the field
 				saveField(aPart);
 				return LINE_NORMAL;
 			}
@@ -215,11 +218,11 @@ public class CSVFileParser {
 				return LINE_NORMAL;
 			}
 		} else if (c == '\n') {//DOS & UNIX newline
-			if (fieldStat != FIELD_QUOTED
+			if ((fieldStat != FIELD_QUOTED)
 					|| ((fieldStat == FIELD_QUOTED) && (charStat == CHAR_ESCAPE))) {
 				saveField(aPart);
 				//Save the current record
-				boolean toAdd = currentRecordNeedsAdded();
+				final boolean toAdd = currentRecordNeedsAdded();
 				if (toAdd){
 					if (!fileHeaderprocessed){
 						synchronized (dataRecordFields) {
@@ -251,14 +254,17 @@ public class CSVFileParser {
 	 */
 	private boolean currentRecordNeedsAdded() {
 		boolean hasData=true;
-		if (skipEmptyLines)
-			if (thisRecord.size()==1)
-				if ("".equals(thisRecord.values().iterator().next()))
+		if (skipEmptyLines) {
+			if (thisRecord.size()==1) {
+				if ("".equals(thisRecord.values().iterator().next())) {
 					hasData=false;
+				}
+			}
+		}
 		return hasData;
 	}
 
-	public CSVFileParser(char seperator, String[] dataRecordFields, boolean skipEmptyLines, boolean hasHeader, boolean loadNodeNamesFromHeader){
+	public CSVFileParser(final char seperator, final String[] dataRecordFields, final boolean skipEmptyLines, final boolean hasHeader, final boolean loadNodeNamesFromHeader){
 		this.token_seperator=seperator;
 		this.dataRecordFields = dataRecordFields;
 		this.headerRecordFields = new String[]{};
@@ -266,13 +272,13 @@ public class CSVFileParser {
 		this.hasHeader = hasHeader;
 		this.loadNodeNamesFromHeader = loadNodeNamesFromHeader;
 	}
-	
-	public static void main(String[] args)
+
+	public static void main(final String[] args)
 	{
-		boolean skipEmptyLines=true;
-		boolean hasHeader=true;
-		boolean loadNodeNamesFromHeader=true;
-		CSVFileParser fr = new CSVFileParser(
+		final boolean skipEmptyLines=true;
+		final boolean hasHeader=true;
+		final boolean loadNodeNamesFromHeader=true;
+		final CSVFileParser fr = new CSVFileParser(
 				',',
 				new String[]{"customField1","customField2"},
 				skipEmptyLines,
@@ -282,6 +288,7 @@ public class CSVFileParser {
 		try {
 			//File f = new File();
 			StringReader sr = new StringReader("aCSVHeader1,aCSVHeader2\n\nvalue1.1,value1.2\n\n\n\nvalue2.1,value2.2\n\n\n\n\n\n\n");
+			fr.resetParser();
 			fr.doParse(sr);
 			fr.queue.setFinished();
 			Map<String,String> result;
@@ -290,18 +297,19 @@ public class CSVFileParser {
 			}
 			System.out.println();
 			sr = new StringReader("secondHeader1,secondHeader2\n\nsecondvalue1.1,secondvalue1.2\n\n\n\nsecondvalue2.1,secondvalue2.2\n\n\n\n\n\n\n");
+			fr.resetParser();
 			fr.doParse(sr);
 			fr.queue.setFinished();
 			while ((result =fr.queue.getNextRecord()) !=null) {
 				System.out.println(result);
 			}
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 	}
-	
+
 	/**
 	 * @return Returns the queue.
 	 */
