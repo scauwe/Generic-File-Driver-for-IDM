@@ -39,12 +39,12 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_CONNECTURLTRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_USERNAMETRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_PASSWORDTRIGGER.getParameterName(), "");
-		final ExternalExec exec = new ExternalExec();
+		final ExternalExec testSubject = new ExternalExec();
 
-		exec.init(trace,params,driver);
+		testSubject.init(trace,params,driver);
 		final File f = new File(System.getProperty("java.io.tmpdir"));
 		final long startTime = System.currentTimeMillis();
-		exec.doPostProcess(f);
+		testSubject.doPostProcess(f);
 		final long endTime = System.currentTimeMillis();
 		assertTrue((endTime-startTime) < 100000);//Should be faster than 100 seconds
 	}
@@ -60,12 +60,12 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_CONNECTURLTRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_USERNAMETRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_PASSWORDTRIGGER.getParameterName(), "");
-		final ExternalExec exec = new ExternalExec();
+		final ExternalExec testSubject = new ExternalExec();
 
-		exec.init(trace,params,driver);
+		testSubject.init(trace,params,driver);
 		final File f = new File(System.getProperty("java.io.tmpdir"));
 		final long startTime = System.currentTimeMillis();
-		exec.doPostProcess(f);
+		testSubject.doPostProcess(f);
 		final long endTime = System.currentTimeMillis();
 		assertTrue((endTime-startTime) > 5000);//Should be 10 seconds or more
 	}
@@ -88,14 +88,14 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_CONNECTURLTRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_USERNAMETRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_PASSWORDTRIGGER.getParameterName(), "");
-		final ExternalExec exec = new ExternalExec();
+		final ExternalExec testSubject = new ExternalExec();
 
-		exec.init(trace,params,driver);
+		testSubject.init(trace,params,driver);
 		//The file should not reside in the workdir this time!!!
 		final File f = new File("C:\\temp\\test.csv");
 		final FileReader fr = new FileReader(tmpFile);
 		final BufferedReader br = new BufferedReader(fr);
-		exec.doPostProcess(f);
+		testSubject.doPostProcess(f);
 		assertEquals(new File(workdir).getAbsolutePath(), br.readLine());
 		br.close();
 	}
@@ -118,14 +118,14 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_CONNECTURLTRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_USERNAMETRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_PASSWORDTRIGGER.getParameterName(), "");
-		final ExternalExec exec = new ExternalExec();
+		final ExternalExec testSubject = new ExternalExec();
 
-		exec.init(trace,params,driver);
+		testSubject.init(trace,params,driver);
 		//The file should not reside in the workdir this time!!!
 		final File f = new File(workdir+File.separatorChar+"dummy.csv");
 		final FileReader fr = new FileReader(tmpFile);
 		final BufferedReader br = new BufferedReader(fr);
-		exec.doPostProcess(f);
+		testSubject.doPostProcess(f);
 		assertEquals(new File(workdir).getAbsolutePath(), br.readLine());
 		br.close();
 	}
@@ -151,14 +151,14 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_CONNECTURLTRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_USERNAMETRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_PASSWORDTRIGGER.getParameterName(), "");
-		final ExternalExec exec = new ExternalExec();
+		final ExternalExec testSubject = new ExternalExec();
 
-		exec.init(trace,params,driver);
+		testSubject.init(trace,params,driver);
 		//The file should not reside in the workdir this time!!!
 		final File f = new File(workdir+File.separatorChar+"dummy.csv");
 		final FileReader fr = new FileReader(tmpFile);
 		final BufferedReader br = new BufferedReader(fr);
-		exec.doPostProcess(f);
+		testSubject.doPostProcess(f);
 		assertEquals(f.getParent()+" "+f.getName()+" "+f.getAbsolutePath(), br.readLine());
 		br.close();
 	}
@@ -184,18 +184,18 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_CONNECTURLTRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_USERNAMETRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_PASSWORDTRIGGER.getParameterName(), "");
-		final ExternalExec exec = new ExternalExec();
+		final ExternalExec testSubject = new ExternalExec();
 		final IDriver driver = mock(IDriver.class);
 		final ISubscriberShim subscriber = mock(ISubscriberShim.class);
 		when(subscriber.getConnectionInfo()).thenReturn(new ConnectionInfo("aPassword", "aUserName", "aConnectURL"));
 		when(driver.getSubscriber()).thenReturn(subscriber);
 
-		exec.init(trace,params,driver);
+		testSubject.init(trace,params,driver);
 		//The file should not reside in the workdir this time!!!
 		final File f = new File(workdir+File.separatorChar+"dummy.csv");
 		final FileReader fr = new FileReader(tmpFile);
 		final BufferedReader br = new BufferedReader(fr);
-		exec.doPostProcess(f);
+		testSubject.doPostProcess(f);
 		assertEquals(f.getParent()+" "+f.getName()+" "+f.getAbsolutePath()+" aUserName aPassword aConnectURL", br.readLine());
 		br.close();
 	}
@@ -224,18 +224,18 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_CONNECTURLTRIGGER.getParameterName(), "Enter URL:");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_USERNAMETRIGGER.getParameterName(), "Enter token:");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_PASSWORDTRIGGER.getParameterName(), "Enter password:");
-		final ExternalExec exec = new ExternalExec();
+		final ExternalExec testSubject = new ExternalExec();
 		final IDriver driver = mock(IDriver.class);
 		final ISubscriberShim subscriber = mock(ISubscriberShim.class);
 		when(subscriber.getConnectionInfo()).thenReturn(new ConnectionInfo("aPassword", "aUserName", "aConnectURL"));
 		when(driver.getSubscriber()).thenReturn(subscriber);
 
-		exec.init(trace,params,driver);
+		testSubject.init(trace,params,driver);
 		//The file should not reside in the workdir this time!!!
 		final File f = new File(workdir+File.separatorChar+"dummy.csv");
 		final FileReader fr = new FileReader(tmpFile);
 		final BufferedReader br = new BufferedReader(fr);
-		exec.doPostProcess(f);
+		testSubject.doPostProcess(f);
 		assertEquals("aUserName", br.readLine());
 		br.close();
 	}
@@ -264,18 +264,18 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_CONNECTURLTRIGGER.getParameterName(), "Enter URL:");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_USERNAMETRIGGER.getParameterName(), "Enter token:");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_PASSWORDTRIGGER.getParameterName(), "Enter password:");
-		final ExternalExec exec = new ExternalExec();
+		final ExternalExec testSubject = new ExternalExec();
 		final IDriver driver = mock(IDriver.class);
 		final ISubscriberShim subscriber = mock(ISubscriberShim.class);
 		when(subscriber.getConnectionInfo()).thenReturn(new ConnectionInfo("aPassword", "aUserName", "aConnectURL"));
 		when(driver.getSubscriber()).thenReturn(subscriber);
 
-		exec.init(trace,params,driver);
+		testSubject.init(trace,params,driver);
 		//The file should not reside in the workdir this time!!!
 		final File f = new File(workdir+File.separatorChar+"dummy.csv");
 		final FileReader fr = new FileReader(tmpFile);
 		final BufferedReader br = new BufferedReader(fr);
-		exec.doPostProcess(f);
+		testSubject.doPostProcess(f);
 		assertEquals("aPassword", br.readLine());
 		br.close();
 	}
@@ -304,18 +304,18 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_CONNECTURLTRIGGER.getParameterName(), "Enter URL:");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_USERNAMETRIGGER.getParameterName(), "Enter token:");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_PASSWORDTRIGGER.getParameterName(), "Enter password:");
-		final ExternalExec exec = new ExternalExec();
+		final ExternalExec testSubject = new ExternalExec();
 		final IDriver driver = mock(IDriver.class);
 		final ISubscriberShim subscriber = mock(ISubscriberShim.class);
 		when(subscriber.getConnectionInfo()).thenReturn(new ConnectionInfo("aPassword", "aUserName", "aConnectURL"));
 		when(driver.getSubscriber()).thenReturn(subscriber);
 
-		exec.init(trace,params,driver);
+		testSubject.init(trace,params,driver);
 		//The file should not reside in the workdir this time!!!
 		final File f = new File(workdir+File.separatorChar+"dummy.csv");
 		final FileReader fr = new FileReader(tmpFile);
 		final BufferedReader br = new BufferedReader(fr);
-		exec.doPostProcess(f);
+		testSubject.doPostProcess(f);
 		assertEquals("aConnectURL", br.readLine());
 		br.close();
 	}
@@ -346,18 +346,18 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_CONNECTURLTRIGGER.getParameterName(), "Enter URL:");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_USERNAMETRIGGER.getParameterName(), "Enter token:");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_PASSWORDTRIGGER.getParameterName(), "Enter password:");
-		final ExternalExec exec = new ExternalExec();
+		final ExternalExec testSubject = new ExternalExec();
 		final IDriver driver = mock(IDriver.class);
 		final ISubscriberShim subscriber = mock(ISubscriberShim.class);
 		when(subscriber.getConnectionInfo()).thenReturn(new ConnectionInfo("aPassword", "aUserName", "aConnectURL"));
 		when(driver.getSubscriber()).thenReturn(subscriber);
 
-		exec.init(trace,params,driver);
+		testSubject.init(trace,params,driver);
 		//The file should not reside in the workdir this time!!!
 		final File f = new File(workdir+File.separatorChar+"dummy.csv");
 		final FileReader fr = new FileReader(tmpFile);
 		final BufferedReader br = new BufferedReader(fr);
-		exec.doPostProcess(f);
+		testSubject.doPostProcess(f);
 		assertEquals("aUserName ", br.readLine());
 		assertEquals("aPassword ", br.readLine());
 		assertEquals("aConnectURL", br.readLine());

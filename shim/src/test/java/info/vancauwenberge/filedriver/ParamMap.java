@@ -5,6 +5,7 @@ import java.util.HashMap;
 import com.novell.nds.dirxml.driver.xds.DataType;
 import com.novell.nds.dirxml.driver.xds.Parameter;
 
+@SuppressWarnings("serial")
 public class ParamMap extends HashMap<String, Parameter> {
 	public void putParameter(final String name, final String value){
 		this.put(name, new Parameter(name,value,DataType.STRING));
