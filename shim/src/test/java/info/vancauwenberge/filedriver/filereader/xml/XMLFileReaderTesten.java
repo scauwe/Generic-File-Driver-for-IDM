@@ -7,7 +7,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.Map;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.mockito.Mock;
 
 import com.novell.nds.dirxml.driver.Trace;
@@ -23,6 +25,10 @@ public class XMLFileReaderTesten extends AbstractStrategyTest{
 	@Mock
 	IPublisher publisher;
 
+	//The Folder will be created before each test method and (recursively) deleted after each test method.
+	@Rule
+	public TemporaryFolder temporaryFolder = new TemporaryFolder();
+
 	@Test
 	public void testReadRecord_WithTagsUsed() throws Exception {
 		final Trace trace = new Trace(">");
@@ -32,8 +38,7 @@ public class XMLFileReaderTesten extends AbstractStrategyTest{
 		params.putParameter(XMLFileReader.TAG_FORCED_ENCODING, "UTF-8");
 		params.putParameter(XMLFileReader.TAG_PRE_XSLT, "");
 		params.putParameter(GenericFileDriverShim.DriverParam.SCHEMA.getParamName(),"not,used,schema");
-		final File f = File.createTempFile("test", ".xml", new File(System.getProperty("user.dir")));
-		f.deleteOnExit();
+		final File f = temporaryFolder.newFile();
 		//Write the CSV file
 		final FileWriter fw = new FileWriter(f);
 		fw.write("<root><someRecord><AField>AValue</AField><BField>BValue</BField><CField>CValue</CField></someRecord></root>");
@@ -63,8 +68,7 @@ public class XMLFileReaderTesten extends AbstractStrategyTest{
 		params.putParameter(XMLFileReader.TAG_FORCED_ENCODING, "UTF-8");
 		params.putParameter(XMLFileReader.TAG_PRE_XSLT, "");
 		params.putParameter(GenericFileDriverShim.DriverParam.SCHEMA.getParamName(),"not,used,schema");
-		final File f = File.createTempFile("test", ".xml", new File(System.getProperty("user.dir")));
-		f.deleteOnExit();
+		final File f = temporaryFolder.newFile();
 		//Write the CSV file
 		final FileWriter fw = new FileWriter(f);
 		fw.write("<root><someRecord><AField>AValue</AField><BField>BValue</BField><CField>CValue</CField></someRecord></root>");
@@ -95,8 +99,7 @@ public class XMLFileReaderTesten extends AbstractStrategyTest{
 		params.putParameter(XMLFileReader.TAG_FORCED_ENCODING, "UTF-8");
 		params.putParameter(XMLFileReader.TAG_PRE_XSLT, "");
 		params.putParameter(GenericFileDriverShim.DriverParam.SCHEMA.getParamName(),"not,used,schema");
-		final File f = File.createTempFile("test", ".xml", new File(System.getProperty("user.dir")));
-		f.deleteOnExit();
+		final File f = temporaryFolder.newFile();
 		//Write the CSV file
 		final FileWriter fw = new FileWriter(f);
 		fw.write("<root><someRecord><AField>AValue</AField><BField>BValue</BField><CField>CValue</CField></someRecord>"
@@ -146,8 +149,7 @@ public class XMLFileReaderTesten extends AbstractStrategyTest{
 				"</xsl:template>"+
 				"</xsl:stylesheet>");
 		params.putParameter(GenericFileDriverShim.DriverParam.SCHEMA.getParamName(),"not,used,schema");
-		final File f = File.createTempFile("test", ".xml", new File(System.getProperty("user.dir")));
-		f.deleteOnExit();
+		final File f = temporaryFolder.newFile();
 		//Write the CSV file
 		final FileWriter fw = new FileWriter(f);
 		fw.write("<UserDetails>"+
@@ -184,8 +186,7 @@ public class XMLFileReaderTesten extends AbstractStrategyTest{
 		params.putParameter(XMLFileReader.TAG_FORCED_ENCODING, "UTF-8");
 		params.putParameter(XMLFileReader.TAG_PRE_XSLT, "");
 		params.putParameter(GenericFileDriverShim.DriverParam.SCHEMA.getParamName(),"not,used,schema");
-		final File f = File.createTempFile("test", ".xml", new File(System.getProperty("user.dir")));
-		f.deleteOnExit();
+		final File f = temporaryFolder.newFile();
 		//Write the CSV file
 		final FileWriter fw = new FileWriter(f);
 		fw.write("<root></root>");

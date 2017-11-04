@@ -7,7 +7,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.Map;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.mockito.Answers;
 import org.mockito.Mock;
 
@@ -26,6 +28,10 @@ public class CSVFileReaderTester extends AbstractStrategyTest{
 	@Mock
 	IPublisher publisher;
 
+	//The Folder will be created before each test method and (recursively) deleted after each test method.
+	@Rule
+	public TemporaryFolder temporaryFolder = new TemporaryFolder();
+
 	@Test
 	public void testCSVWithHeaderUsed() throws Exception {
 		final Trace trace = new Trace(">");
@@ -37,8 +43,7 @@ public class CSVFileReaderTester extends AbstractStrategyTest{
 		params.putParameter(CSVFileReader.Parameters.SKIP_EMPTY_LINES.getParameterName(), true);
 		params.putParameter(CSVFileReader.Parameters.USE_HEADER_NAMES.getParameterName(), true);
 		params.putParameter(GenericFileDriverShim.DriverParam.SCHEMA.getParamName(),"not,used,schema");
-		final File f = File.createTempFile("test", ".csv", new File(System.getProperty("user.dir")));
-		f.deleteOnExit();
+		final File f = temporaryFolder.newFile();
 		//Write the CSV file
 		final FileWriter fw = new FileWriter(f);
 		fw.write("AField,BField,CField\n\nAValue,BValue,CValue\n");
@@ -71,8 +76,7 @@ public class CSVFileReaderTester extends AbstractStrategyTest{
 		params.putParameter(CSVFileReader.Parameters.SKIP_EMPTY_LINES.getParameterName(), true);
 		params.putParameter(CSVFileReader.Parameters.USE_HEADER_NAMES.getParameterName(), false);
 		params.putParameter(GenericFileDriverShim.DriverParam.SCHEMA.getParamName(),"other,optional,schema");
-		final File f = File.createTempFile("test", ".csv", new File(System.getProperty("user.dir")));
-		f.deleteOnExit();
+		final File f = temporaryFolder.newFile();
 		//Write the CSV file
 		final FileWriter fw = new FileWriter(f);
 		fw.write("AField,BField,CField\nAValue,BValue,CValue");
@@ -104,8 +108,7 @@ public class CSVFileReaderTester extends AbstractStrategyTest{
 		params.putParameter(CSVFileReader.Parameters.SKIP_EMPTY_LINES.getParameterName(), true);
 		params.putParameter(CSVFileReader.Parameters.USE_HEADER_NAMES.getParameterName(), false);
 		params.putParameter(GenericFileDriverShim.DriverParam.SCHEMA.getParamName(),"other,optional,schema");
-		final File f = File.createTempFile("test", ".csv", new File(System.getProperty("user.dir")));
-		f.deleteOnExit();
+		final File f = temporaryFolder.newFile();
 		//Write the CSV file
 		final FileWriter fw = new FileWriter(f);
 		fw.write("\n\n\nAValue,BValue,CValue\n\n\n");
@@ -137,8 +140,7 @@ public class CSVFileReaderTester extends AbstractStrategyTest{
 		params.putParameter(CSVFileReader.Parameters.SKIP_EMPTY_LINES.getParameterName(), true);
 		params.putParameter(CSVFileReader.Parameters.USE_HEADER_NAMES.getParameterName(), true);
 		params.putParameter(GenericFileDriverShim.DriverParam.SCHEMA.getParamName(),"not,used,schema");
-		final File f = File.createTempFile("test", ".csv", new File(System.getProperty("user.dir")));
-		f.deleteOnExit();
+		final File f = temporaryFolder.newFile();
 		//Write the CSV file
 		final FileWriter fw = new FileWriter(f);
 		fw.write("AField,BField,CField\n");
@@ -163,8 +165,7 @@ public class CSVFileReaderTester extends AbstractStrategyTest{
 		params.putParameter(CSVFileReader.Parameters.SKIP_EMPTY_LINES.getParameterName(), true);
 		params.putParameter(CSVFileReader.Parameters.USE_HEADER_NAMES.getParameterName(), false);
 		params.putParameter(GenericFileDriverShim.DriverParam.SCHEMA.getParamName(),"other,optional,schema");
-		final File f = File.createTempFile("test", ".csv", new File(System.getProperty("user.dir")));
-		f.deleteOnExit();
+		final File f = temporaryFolder.newFile();
 		//Write the CSV file
 		final FileWriter fw = new FileWriter(f);
 		fw.write("\n\n\n");
@@ -189,8 +190,7 @@ public class CSVFileReaderTester extends AbstractStrategyTest{
 		params.putParameter(CSVFileReader.Parameters.SKIP_EMPTY_LINES.getParameterName(), true);
 		params.putParameter(CSVFileReader.Parameters.USE_HEADER_NAMES.getParameterName(), false);
 		params.putParameter(GenericFileDriverShim.DriverParam.SCHEMA.getParamName(),"other,optional,schema");
-		final File f = File.createTempFile("test", ".csv", new File(System.getProperty("user.dir")));
-		f.deleteOnExit();
+		final File f = temporaryFolder.newFile();
 		//Write the CSV file
 		final FileWriter fw = new FileWriter(f);
 		fw.write("AField\tBField\tCField\nAValue\tBValue\tCValue");
@@ -222,8 +222,7 @@ public class CSVFileReaderTester extends AbstractStrategyTest{
 		params.putParameter(CSVFileReader.Parameters.SKIP_EMPTY_LINES.getParameterName(), false);
 		params.putParameter(CSVFileReader.Parameters.USE_HEADER_NAMES.getParameterName(), true);
 		params.putParameter(GenericFileDriverShim.DriverParam.SCHEMA.getParamName(),"other,optional,schema");
-		final File f = File.createTempFile("test", ".csv", new File(System.getProperty("user.dir")));
-		f.deleteOnExit();
+		final File f = temporaryFolder.newFile();
 		//Write the CSV file
 		final FileWriter fw = new FileWriter(f);
 		fw.write("AField\tBField\tCField\n\nAValue\tBValue\tCValue");
