@@ -52,95 +52,36 @@ public class CSVFileReader extends AbstractStrategy implements IFileReadStrategy
 	private CSVFileParser handler;
 
 	protected enum Parameters implements IStrategyParameters{
-		SKIP_EMPTY_LINES {
-			@Override
-			public String getParameterName() {
-				return "csvReader_skipEmptyLines";
-			}
+		SKIP_EMPTY_LINES("csvReader_skipEmptyLines","true",DataType.BOOLEAN),
+		USE_HEADER_NAMES("csvReader_UseHeaderNames","true",DataType.BOOLEAN),
+		HAS_HEADER      ("csvReader_hasHeader"     ,"true",DataType.BOOLEAN),
+		FORCED_ENCODING ("csvReader_forcedEncoding",null  ,DataType.STRING),
+		SEPERATOR       ("csvReader_seperator"     ,","   ,DataType.STRING);
 
-			@Override
-			public String getDefaultValue() {
-				return "true";
-			}
+		private Parameters(final String name, final String defaultValue, final DataType dataType) {
+			this.name = name;
+			this.defaultValue = defaultValue;
+			this.dataType = dataType;
+		}
 
-			@Override
-			public DataType getDataType() {
-				return DataType.BOOLEAN;
-			}
-		},
-		USE_HEADER_NAMES {
-			@Override
-			public String getParameterName() {
-				return "csvReader_UseHeaderNames";
-			}
-
-			@Override
-			public String getDefaultValue() {
-				return "true";
-			}
-
-			@Override
-			public DataType getDataType() {
-				return DataType.BOOLEAN;
-			}
-		},
-		HAS_HEADER {
-			@Override
-			public String getParameterName() {
-				return "csvReader_hasHeader";
-			}
-
-			@Override
-			public String getDefaultValue() {
-				return "true";
-			}
-
-			@Override
-			public DataType getDataType() {
-				return DataType .BOOLEAN;
-			}
-		},
-		FORCED_ENCODING {
-			@Override
-			public String getParameterName() {
-				return "csvReader_forcedEncoding";
-			}
-
-			@Override
-			public String getDefaultValue() {
-				return null;
-			}
-
-			@Override
-			public DataType getDataType() {
-				return DataType.STRING;
-			}
-		},
-		SEPERATOR {
-			@Override
-			public String getParameterName() {
-				return "csvReader_seperator";
-			}
-
-			@Override
-			public String getDefaultValue() {
-				return ",";
-			}
-
-			@Override
-			public DataType getDataType() {
-				return DataType.STRING ;
-			}
-		};
+		private final String name;
+		private final String defaultValue;
+		private final DataType dataType;
 
 		@Override
-		public abstract String getParameterName();
+		public String getParameterName(){
+			return name;
+		}
 
 		@Override
-		public abstract String getDefaultValue();
+		public String getDefaultValue(){
+			return defaultValue;
+		}
 
 		@Override
-		public abstract DataType getDataType();
+		public DataType getDataType(){
+			return dataType;
+		}
 
 		@Override
 		public Constraint[] getConstraints() {

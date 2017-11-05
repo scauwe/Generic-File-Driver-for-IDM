@@ -60,79 +60,36 @@ import info.vancauwenberge.filedriver.util.Util;
 
 public class XPathXMLFileReader extends AbstractStrategy implements IFileReadStrategy{
 	protected enum Parameters implements IStrategyParameters{
-		USE_DRIVER_SCHEMA {
-			@Override
-			public String getParameterName() {
-				return "xmlxpathReader_UseDriverSchema";
-			}
 
-			@Override
-			public String getDefaultValue() {
-				return "true";
-			}
+		USE_DRIVER_SCHEMA   ("xmlxpathReader_UseDriverSchema","true",DataType.BOOLEAN),
+		FORCED_ENCODING     ("xmlxpathReader_forcedEncoding" ,null  ,DataType.STRING),
+		XPATH_EXPRESSIONS   ("xmlxpathReader_attributeXpaths",null  ,DataType.STRING),
+		XPATH_RECORD_NODESET("xmlxpathReader_recordXpath"    ,"/"   ,DataType.STRING);
 
-			@Override
-			public DataType getDataType() {
-				return DataType.BOOLEAN;
-			}
-		},
-		FORCED_ENCODING {
-			@Override
-			public String getParameterName() {
-				return "xmlxpathReader_forcedEncoding";
-			}
+		private Parameters(final String name, final String defaultValue, final DataType dataType) {
+			this.name = name;
+			this.defaultValue = defaultValue;
+			this.dataType = dataType;
+		}
 
-			@Override
-			public String getDefaultValue() {
-				return null;
-			}
-
-			@Override
-			public DataType getDataType() {
-				return DataType.STRING;
-			}
-		},
-		XPATH_EXPRESSIONS {
-			@Override
-			public String getParameterName() {
-				return "xmlxpathReader_attributeXpaths";
-			}
-
-			@Override
-			public String getDefaultValue() {
-				return null;
-			}
-
-			@Override
-			public DataType getDataType() {
-				return DataType.STRING;
-			}
-		},
-		XPATH_RECORD_NODESET {
-			@Override
-			public String getParameterName() {
-				return "xmlxpathReader_recordXpath";
-			}
-
-			@Override
-			public String getDefaultValue() {
-				return "/";
-			}
-
-			@Override
-			public DataType getDataType() {
-				return DataType.STRING;
-			}
-		};
+		private final String name;
+		private final String defaultValue;
+		private final DataType dataType;
 
 		@Override
-		public abstract String getParameterName();
+		public String getParameterName(){
+			return name;
+		}
 
 		@Override
-		public abstract String getDefaultValue();
+		public String getDefaultValue(){
+			return defaultValue;
+		}
 
 		@Override
-		public abstract DataType getDataType();
+		public DataType getDataType(){
+			return dataType;
+		}
 
 		@Override
 		public Constraint[] getConstraints() {

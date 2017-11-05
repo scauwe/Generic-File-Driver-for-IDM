@@ -34,9 +34,9 @@ public class XMLFileReaderTester extends AbstractStrategyTest{
 		final Trace trace = new Trace(">");
 		final ParamMap params = new ParamMap();
 		//No clue how the Parameter works, so just overwrite what we need...
-		params.putParameter(XMLFileReader.TAG_USE_TAG_NAMES, true);
-		params.putParameter(XMLFileReader.TAG_FORCED_ENCODING, "UTF-8");
-		params.putParameter(XMLFileReader.TAG_PRE_XSLT, "");
+		params.putParameter(XMLFileReader.Parameters.USE_TAG_NAMES.getParameterName(), true);
+		params.putParameter(XMLFileReader.Parameters.FORCED_ENCODING.getParameterName(), "UTF-8");
+		params.putParameter(XMLFileReader.Parameters.PRE_XSLT.getParameterName(), "");
 		params.putParameter(GenericFileDriverShim.DriverParam.SCHEMA.getParamName(),"not,used,schema");
 		final File f = temporaryFolder.newFile();
 		//Write the CSV file
@@ -64,9 +64,9 @@ public class XMLFileReaderTester extends AbstractStrategyTest{
 		final Trace trace = new Trace(">");
 		final ParamMap params = new ParamMap();
 		//No clue how the Parameter works, so just overwrite what we need...
-		params.putParameter(XMLFileReader.TAG_USE_TAG_NAMES, false);
-		params.putParameter(XMLFileReader.TAG_FORCED_ENCODING, "UTF-8");
-		params.putParameter(XMLFileReader.TAG_PRE_XSLT, "");
+		params.putParameter(XMLFileReader.Parameters.USE_TAG_NAMES.getParameterName(), false);
+		params.putParameter(XMLFileReader.Parameters.FORCED_ENCODING.getParameterName(), "UTF-8");
+		params.putParameter(XMLFileReader.Parameters.PRE_XSLT.getParameterName(), "");
 		params.putParameter(GenericFileDriverShim.DriverParam.SCHEMA.getParamName(),"not,used,schema");
 		final File f = temporaryFolder.newFile();
 		//Write the CSV file
@@ -95,9 +95,9 @@ public class XMLFileReaderTester extends AbstractStrategyTest{
 		final Trace trace = new Trace(">");
 		final ParamMap params = new ParamMap();
 		//No clue how the Parameter works, so just overwrite what we need...
-		params.putParameter(XMLFileReader.TAG_USE_TAG_NAMES, true);
-		params.putParameter(XMLFileReader.TAG_FORCED_ENCODING, "UTF-8");
-		params.putParameter(XMLFileReader.TAG_PRE_XSLT, "");
+		params.putParameter(XMLFileReader.Parameters.USE_TAG_NAMES.getParameterName(), true);
+		params.putParameter(XMLFileReader.Parameters.FORCED_ENCODING.getParameterName(), "UTF-8");
+		params.putParameter(XMLFileReader.Parameters.PRE_XSLT.getParameterName(), "  ");
 		params.putParameter(GenericFileDriverShim.DriverParam.SCHEMA.getParamName(),"not,used,schema");
 		final File f = temporaryFolder.newFile();
 		//Write the CSV file
@@ -133,9 +133,9 @@ public class XMLFileReaderTester extends AbstractStrategyTest{
 		final Trace trace = new Trace(">");
 		final ParamMap params = new ParamMap();
 		//No clue how the Parameter works, so just overwrite what we need...
-		params.putParameter(XMLFileReader.TAG_USE_TAG_NAMES, true);
-		params.putParameter(XMLFileReader.TAG_FORCED_ENCODING, "UTF-8");
-		params.putParameter(XMLFileReader.TAG_PRE_XSLT, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"+
+		params.putParameter(XMLFileReader.Parameters.USE_TAG_NAMES.getParameterName(), true);
+		params.putParameter(XMLFileReader.Parameters.FORCED_ENCODING.getParameterName(), "UTF-8");
+		params.putParameter(XMLFileReader.Parameters.PRE_XSLT.getParameterName(), "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"+
 				"<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" xmlns:fo=\"http://www.w3.org/1999/XSL/Format\">"+
 				"<xsl:output method=\"xml\" indent=\"yes\"/>"+
 				"<xsl:template match=\"/UserDetails\">"+
@@ -182,9 +182,9 @@ public class XMLFileReaderTester extends AbstractStrategyTest{
 		final Trace trace = new Trace(">");
 		final ParamMap params = new ParamMap();
 		//No clue how the Parameter works, so just overwrite what we need...
-		params.putParameter(XMLFileReader.TAG_USE_TAG_NAMES, true);
-		params.putParameter(XMLFileReader.TAG_FORCED_ENCODING, "UTF-8");
-		params.putParameter(XMLFileReader.TAG_PRE_XSLT, "");
+		params.putParameter(XMLFileReader.Parameters.USE_TAG_NAMES.getParameterName(), true);
+		params.putParameter(XMLFileReader.Parameters.FORCED_ENCODING.getParameterName(), "UTF-8");
+		params.putParameter(XMLFileReader.Parameters.PRE_XSLT.getParameterName(), "");
 		params.putParameter(GenericFileDriverShim.DriverParam.SCHEMA.getParamName(),"not,used,schema");
 		final File f = temporaryFolder.newFile();
 		//Write the CSV file

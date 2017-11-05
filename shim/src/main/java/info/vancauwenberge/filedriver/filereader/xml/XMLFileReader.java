@@ -28,7 +28,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
 import java.util.Map;
 
 import javax.xml.transform.OutputKeys;
@@ -46,10 +45,12 @@ import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
 
 import com.novell.nds.dirxml.driver.Trace;
+import com.novell.nds.dirxml.driver.xds.Constraint;
 import com.novell.nds.dirxml.driver.xds.DataType;
 import com.novell.nds.dirxml.driver.xds.Parameter;
 import com.novell.nds.dirxml.driver.xds.XDSParameterException;
 
+import info.vancauwenberge.filedriver.api.AbstractStrategy;
 import info.vancauwenberge.filedriver.api.IFileReadStrategy;
 import info.vancauwenberge.filedriver.exception.ReadException;
 import info.vancauwenberge.filedriver.filepublisher.IPublisher;
@@ -58,13 +59,51 @@ import info.vancauwenberge.filedriver.shim.driver.GenericFileDriverShim;
 import info.vancauwenberge.filedriver.util.TraceLevel;
 import info.vancauwenberge.filedriver.util.Util;
 
-public class XMLFileReader implements IFileReadStrategy{
-
-	private RecordQueue queue;
-	private Thread parsingThread;
+public class XMLFileReader extends AbstractStrategy implements IFileReadStrategy{
+	/*
 	static final String TAG_USE_TAG_NAMES = "xmlReader_useTagNames";
 	static final String TAG_PRE_XSLT = "xmlReader_preXslt";
 	static final String TAG_FORCED_ENCODING ="xmlReader_forcedEncoding";
+	 */
+	protected enum Parameters implements IStrategyParameters{
+		USE_TAG_NAMES  ("xmlReader_useTagNames"   ,"true",DataType.BOOLEAN),
+		PRE_XSLT       ("xmlReader_preXslt"       ,""    ,DataType.STRING),
+		FORCED_ENCODING("xmlReader_forcedEncoding",null  ,DataType.STRING);
+
+		private Parameters(final String name, final String defaultValue, final DataType dataType) {
+			this.name = name;
+			this.defaultValue = defaultValue;
+			this.dataType = dataType;
+		}
+
+		private final String name;
+		private final String defaultValue;
+		private final DataType dataType;
+
+		@Override
+		public String getParameterName(){
+			return name;
+		}
+
+		@Override
+		public String getDefaultValue(){
+			return defaultValue;
+		}
+
+		@Override
+		public DataType getDataType(){
+			return dataType;
+		}
+
+		@Override
+		public Constraint[] getConstraints() {
+			return null;
+		}
+	}
+
+
+	private RecordQueue queue;
+	private Thread parsingThread;
 
 	private boolean useTagNames = true;
 	private String[] tagNames;
@@ -78,44 +117,13 @@ public class XMLFileReader implements IFileReadStrategy{
 	private String encoding = "ISO-8859-1";
 	private Trace trace;
 
-	/* (non-Javadoc)
-	 * @see info.vancauwenberge.filedriver.api.IFileReader#getParameterDefinitions()
-	 */
+	@SuppressWarnings("unchecked")
 	@Override
-	public Map<String,Parameter> getParameterDefinitions() {
-		final Map<String,Parameter> paramDefs = new HashMap<String,Parameter>(0);
-		Parameter param;
-
-		//Add file locator as param
-		param = new Parameter(TAG_USE_TAG_NAMES, //tag name
-				"true", //default value (optional)
-				DataType.BOOLEAN); //data type
-		paramDefs.put(param.tagName(), param);
-
-		//we need info about the driver schema
-		/*
-        param = new Parameter(GenericFileDriverShim.TAG_SCHEMA, //tag name
-        		GenericFileDriverShim.DEFAULT_SCHEMA, //default value
-                              DataType.STRING); //data type
-        param.add(RequiredConstraint.REQUIRED);
-        paramDefs.put(param.tagName(), param);
-		 */
-		//xslt transform prior to parsing?
-		param = new Parameter(TAG_PRE_XSLT, //tag name
-				"", //default value: no transform
-				DataType.STRING); //data type
-		paramDefs.put(param.tagName(), param);
-
-		//forced file encoding
-		param = new Parameter(TAG_FORCED_ENCODING, //tag name
-				null, //default value: no transform
-				DataType.STRING); //data type
-		paramDefs.put(param.tagName(), param);
-
-		return paramDefs;
-
-
+	public <E extends Enum<?> & IStrategyParameters> Class<E> getParametersEnum() {
+		return (Class<E>) Parameters.class;
 	}
+
+
 
 	/* (non-Javadoc)
 	 * @see info.vancauwenberge.filedriver.api.IFileReader#init(com.novell.nds.dirxml.driver.Trace, java.util.Map)
@@ -124,15 +132,15 @@ public class XMLFileReader implements IFileReadStrategy{
 	public void init(final Trace trace, final Map<String,Parameter> driverParams, final IPublisher publisher) throws XDSParameterException {
 		this.trace = trace;
 
-		useTagNames = driverParams.get(TAG_USE_TAG_NAMES).toBoolean().booleanValue();
+		useTagNames = getBoolValueFor(Parameters.USE_TAG_NAMES,driverParams);
 		tagNames = GenericFileDriverShim.getSchemaAsArray(driverParams);
 
-		encoding = driverParams.get(TAG_FORCED_ENCODING).toString();
+		encoding = getStringValueFor(Parameters.FORCED_ENCODING, driverParams);
 		if ("".equals(encoding)) {
 			encoding=null;
 		}
-		final String preXslt = driverParams.get(TAG_PRE_XSLT).toString();
-		if (!"".equals(preXslt)) //We need to apply an xslt prior to processing the file
+		final String preXslt = getStringValueFor(Parameters.PRE_XSLT, driverParams);
+		if ((preXslt != null) && !"".equals(preXslt.trim())) //We need to apply an xslt prior to processing the file
 		{
 			// construct a transformer using the generic stylesheet
 			final TransformerFactory factory = TransformerFactory.newInstance();
