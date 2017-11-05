@@ -20,7 +20,7 @@ import info.vancauwenberge.filedriver.api.IFileReadStrategy;
 import info.vancauwenberge.filedriver.filepublisher.IPublisher;
 import info.vancauwenberge.filedriver.shim.driver.GenericFileDriverShim;
 
-public class XMLFileReaderTesten extends AbstractStrategyTest{
+public class XMLFileReaderTester extends AbstractStrategyTest{
 
 	@Mock
 	IPublisher publisher;
