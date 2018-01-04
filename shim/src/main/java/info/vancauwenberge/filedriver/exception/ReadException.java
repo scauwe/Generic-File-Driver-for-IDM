@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2007-2016 Stefaan Van Cauwenberge
+ * Copyright (c) 2007-2017 Stefaan Van Cauwenberge
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0 (the "License"). If a copy of the MPL was not distributed with this
@@ -29,13 +29,17 @@ public class ReadException extends Exception {
 	 * @param message
 	 * @param cause
 	 */
-	public ReadException(String message, Exception cause) {
+	public ReadException(final String message, final Exception cause) {
 		super(message,cause);
 	}
 	/**
 	 * @param cause
 	 */
-	public ReadException(Exception cause) {
+	public ReadException(final Exception cause) {
 		super(cause);
+	}
+
+	public ReadException(final String message) {
+		super(message);
 	}
 }

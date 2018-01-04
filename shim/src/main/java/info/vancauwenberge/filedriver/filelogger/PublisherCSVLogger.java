@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2007-2016 Stefaan Van Cauwenberge
+ * Copyright (c) 2007-2017 Stefaan Van Cauwenberge
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0 (the "License"). If a copy of the MPL was not distributed with this
@@ -19,20 +19,12 @@
  *******************************************************************************/
 package info.vancauwenberge.filedriver.filelogger;
 
-import info.vancauwenberge.filedriver.api.AbstractStrategy;
-import info.vancauwenberge.filedriver.api.IPublisherLoggerStrategy;
-import info.vancauwenberge.filedriver.exception.WriteException;
-import info.vancauwenberge.filedriver.filepublisher.IPublisher;
-import info.vancauwenberge.filedriver.util.TraceLevel;
-import info.vancauwenberge.filedriver.util.Util;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.EnumMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,20 +35,26 @@ import com.novell.nds.dirxml.driver.xds.DataType;
 import com.novell.nds.dirxml.driver.xds.ElementImpl;
 import com.novell.nds.dirxml.driver.xds.Parameter;
 import com.novell.nds.dirxml.driver.xds.StatusLevel;
-import com.novell.nds.dirxml.driver.xds.StatusType;
 import com.novell.nds.dirxml.driver.xds.XDSParameterException;
 import com.novell.nds.dirxml.driver.xds.XDSStatusElement;
 
+import info.vancauwenberge.filedriver.api.AbstractStrategy;
+import info.vancauwenberge.filedriver.api.IPublisherLoggerStrategy;
+import info.vancauwenberge.filedriver.exception.WriteException;
+import info.vancauwenberge.filedriver.filepublisher.IPublisher;
+import info.vancauwenberge.filedriver.util.TraceLevel;
+import info.vancauwenberge.filedriver.util.Util;
+
 public class PublisherCSVLogger extends AbstractStrategy implements IPublisherLoggerStrategy{
 	/*
-     * Enum holding the general subscriber parameters
-     */
+	 * Enum holding the general subscriber parameters
+	 */
 
 	private enum Parameters implements IStrategyParameters{
-    	/**
-    	 * Should a header record be written
-    	 */
-    	CSV_FILE_WRITE_HEADER{
+		/**
+		 * Should a header record be written
+		 */
+		CSV_FILE_WRITE_HEADER{
 			@Override
 			public String getParameterName() {
 				return "csvLogger_WriteHeader";
@@ -72,10 +70,10 @@ public class PublisherCSVLogger extends AbstractStrategy implements IPublisherLo
 				return DataType.BOOLEAN;
 			}
 		},
-    	/**
-    	 * Seperator to use
-    	 */
-    	CSV_FILE_WRITE_SEPERATOR{
+		/**
+		 * Seperator to use
+		 */
+		CSV_FILE_WRITE_SEPERATOR{
 			@Override
 			public String getParameterName() {
 				return "csvLogger_Seperator";
@@ -92,10 +90,10 @@ public class PublisherCSVLogger extends AbstractStrategy implements IPublisherLo
 			}
 		},
 
-    	/**
-    	 * The forced file encoding
-    	 */
-    	CSV_FILE_WRITE_ENCODING{
+		/**
+		 * The forced file encoding
+		 */
+		CSV_FILE_WRITE_ENCODING{
 			@Override
 			public String getParameterName() {
 				return "csvLogger_ForcedEncoding";
@@ -112,10 +110,10 @@ public class PublisherCSVLogger extends AbstractStrategy implements IPublisherLo
 			}
 		},
 
-    	/**
-    	 * Should every line/record be flushed, or should we let the io system decide.
-    	 */
-    	CSV_FILE_WRITE_FLSUH{
+		/**
+		 * Should every line/record be flushed, or should we let the io system decide.
+		 */
+		CSV_FILE_WRITE_FLSUH{
 			@Override
 			public String getParameterName() {
 				return "csvLogger_FlushMethod";
@@ -134,18 +132,22 @@ public class PublisherCSVLogger extends AbstractStrategy implements IPublisherLo
 
 
 
+		@Override
 		public abstract String getParameterName();
 
+		@Override
 		public abstract String getDefaultValue();
 
+		@Override
 		public abstract DataType getDataType();
 
+		@Override
 		public Constraint[] getConstraints(){
 			return null;
 		}
-    }
+	}
 
-	
+
 	private boolean writeHeader = false;
 	private boolean flushEvryLine = false;
 	private char seperator =';';
@@ -157,31 +159,33 @@ public class PublisherCSVLogger extends AbstractStrategy implements IPublisherLo
 	private EnumMap<LogField, Integer> logFieldPositionMap ;
 	private String[] schema;
 
-	public void init(Trace trace, Map<String, Parameter> driverParams, IPublisher publisher) throws Exception {
+	@Override
+	public void init(final Trace trace, final Map<String, Parameter> driverParams, final IPublisher publisher) throws Exception {
 		this.trace = trace;
 
 		trace.trace("Initialization.", TraceLevel.TRACE);
 		encoding = getStringValueFor(Parameters.CSV_FILE_WRITE_ENCODING,driverParams);//.get(CSV_FILE_WRITE_ENCODING).toString();
 		writeHeader = getBoolValueFor(Parameters.CSV_FILE_WRITE_HEADER,driverParams);//.get(CSV_FILE_WRITE_HEADER).toBoolean().booleanValue();
-		
+
 		flushEvryLine = getBoolValueFor(Parameters.CSV_FILE_WRITE_FLSUH,driverParams);//.get(CSV_FILE_WRITE_FLSUH).toBoolean().booleanValue();
-		
-   		//Tabs and spaces in the driver config are removed by Designer, so we need to use a special 'encoding' for the tab character.
-		String strSeperator = getStringValueFor(Parameters.CSV_FILE_WRITE_SEPERATOR,driverParams);//.get(CSV_FILE_WRITE_SEPERATOR).toString();
+
+		//Tabs and spaces in the driver config are removed by Designer, so we need to use a special 'encoding' for the tab character.
+		final String strSeperator = getStringValueFor(Parameters.CSV_FILE_WRITE_SEPERATOR,driverParams);//.get(CSV_FILE_WRITE_SEPERATOR).toString();
 		if ("{tab}".equalsIgnoreCase(strSeperator)){
 			seperator='\t';
 		}else if ("{space}".equalsIgnoreCase(strSeperator)){
 			seperator=' ';
-		}else if (strSeperator != null && !"".equals(strSeperator)){
-	   		seperator = strSeperator.charAt(0);//This is a required field, so we should have at least one character
-		}else
+		}else if ((strSeperator != null) && !"".equals(strSeperator)){
+			seperator = strSeperator.charAt(0);//This is a required field, so we should have at least one character
+		} else {
 			throw new XDSParameterException("Invalid parameter value for seperator:"+strSeperator);
-		
-   		if ("".equals(encoding) || (encoding==null)){
-   			encoding=Util.getSystemDefaultEncoding();
-   			trace.trace("No encoding given. Using system default of "+encoding, TraceLevel.ERROR_WARN);
-   		}
-   		//schema = GenericFileDriverShim.getSchemaAsArray(driverParams);
+		}
+
+		if ("".equals(encoding) || (encoding==null)){
+			encoding=Util.getSystemDefaultEncoding();
+			trace.trace("No encoding given. Using system default of "+encoding, TraceLevel.ERROR_WARN);
+		}
+		//schema = GenericFileDriverShim.getSchemaAsArray(driverParams);
 		trace.trace("Initialization completed:", TraceLevel.TRACE);
 		trace.trace(" Encoding:"+encoding, TraceLevel.TRACE);
 		trace.trace(" WriteHeader:"+writeHeader, TraceLevel.TRACE);
@@ -195,47 +199,51 @@ public class PublisherCSVLogger extends AbstractStrategy implements IPublisherLo
 	 * @param input
 	 * @return
 	 */
-	private String escapeCsv(String input){
-		if (input==null)
+	private String escapeCsv(final String input){
+		if (input==null) {
 			return "";
+		}
 		//if it contains a double quote: escape with double quote
 		String temp = input.replaceAll("\"","\"\"");
 		//if it contains a double quote, the seperator or newline: surround with double quote
-		if (temp.indexOf('"')>=0 | temp.indexOf('\n')>=0 | temp.indexOf(seperator)>=0)
+		if ((temp.indexOf('"')>=0) | (temp.indexOf('\n')>=0) | (temp.indexOf(seperator)>=0)) {
 			temp = "\""+temp+"\"";
+		}
 		return temp;
 	}
 
-	private void writeLine(String[] values) throws IOException{
+	private void writeLine(final String[] values) throws IOException{
 		for (int i = 0; i < values.length; i++) {
-			if (i>0)
+			if (i>0) {
 				bos.write(seperator);
-			String string = values[i];
+			}
+			final String string = values[i];
 			bos.write(escapeCsv(string));
 		}
 		bos.newLine();
-		if (flushEvryLine)
+		if (flushEvryLine) {
 			bos.flush();
+		}
 	}
 
-	
-	public void openFile(File f, String[] schema, EnumMap<LogField, String> logFieldSchemaMap) throws WriteException {
+
+	@Override
+	public void openFile(final File f, final String[] schema, final EnumMap<LogField, String> logFieldSchemaMap) throws WriteException {
 		trace.trace(" Open LogFile "+f.getName(), TraceLevel.TRACE);
 		trace.trace(" schema map"+logFieldSchemaMap, TraceLevel.TRACE);
 		this.schema = schema;
 		this.logFieldPositionMap = new EnumMap<IPublisherLoggerStrategy.LogField, Integer>(IPublisherLoggerStrategy.LogField.class);
 		try {
-			FileOutputStream fos = new FileOutputStream(f);
-			OutputStreamWriter osw = new OutputStreamWriter(fos, encoding);
+			final FileOutputStream fos = new FileOutputStream(f);
+			final OutputStreamWriter osw = new OutputStreamWriter(fos, encoding);
 			bos = new BufferedWriter(osw);
 			theFile = f;
 			//Append the log schema fields at the end
-			String[] extendedSchema = new String[schema.length+logFieldSchemaMap.size()];
+			final String[] extendedSchema = new String[schema.length+logFieldSchemaMap.size()];
 			System.arraycopy(schema, 0, extendedSchema, 0, schema.length);
-			Set<LogField> keys = logFieldSchemaMap.keySet();
+			final Set<LogField> keys = logFieldSchemaMap.keySet();
 			int index = schema.length;
-			for (Iterator<LogField> iterator = keys.iterator(); iterator.hasNext();) {
-				LogField logField = iterator.next();
+			for (LogField logField : keys) {
 				extendedSchema[index] = logFieldSchemaMap.get(logField);
 				logFieldPositionMap.put(logField, index);
 				trace.trace("Adding "+logField+" at position "+index, TraceLevel.TRACE);
@@ -244,7 +252,7 @@ public class PublisherCSVLogger extends AbstractStrategy implements IPublisherLo
 			if (writeHeader){
 				writeLine(extendedSchema);
 			}
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			Util.printStackTrace(trace,e);
 			throw new WriteException(e);
 		}
@@ -252,12 +260,13 @@ public class PublisherCSVLogger extends AbstractStrategy implements IPublisherLo
 		trace.trace("  Logfields:" + logFieldPositionMap, TraceLevel.TRACE);
 	}
 
+	@Override
 	public File close() throws WriteException {
 		trace.trace(" Closing file.", TraceLevel.TRACE);
 		try {
 			bos.close();
 			return theFile;
-		} catch (IOException e) {
+		} catch (final IOException e) {
 			Util.printStackTrace(trace,e);
 			throw new WriteException(e);
 		}finally{
@@ -265,22 +274,24 @@ public class PublisherCSVLogger extends AbstractStrategy implements IPublisherLo
 		}
 	}
 
-	public void logCommand(int recordNumber, Map<String,String> thisRecord, XDSStatusElement xdsStatusElement) throws WriteException {
+	@Override
+	public void logCommand(final int recordNumber, final Map<String,String> thisRecord, final XDSStatusElement xdsStatusElement) throws WriteException {
 		String[] values = new String[schema.length + logFieldPositionMap.size()];
 		for (int i = 0; i < schema.length; i++) {
-			String fieldName = schema[i];
+			final String fieldName = schema[i];
 			values[i] = thisRecord.get(fieldName);
 		}
-		
+
 		//If we have a statusElement, log the details as well
 		if (xdsStatusElement != null){
 			values = appendStatusFields(recordNumber, xdsStatusElement, values);
 		}
 		try {
 			writeLine(values);
-			if (flushEvryLine)
+			if (flushEvryLine) {
 				bos.flush();
-		} catch (IOException e) {
+			}
+		} catch (final IOException e) {
 			Util.printStackTrace(trace,e);
 			throw new WriteException(e);
 		}
@@ -288,32 +299,32 @@ public class PublisherCSVLogger extends AbstractStrategy implements IPublisherLo
 
 
 	@SuppressWarnings("rawtypes")
-	private String[] appendStatusFields(int recordNumber, XDSStatusElement xdsStatusElement, String[] values) {
-		List children = xdsStatusElement.childElements();
+	private String[] appendStatusFields(final int recordNumber, final XDSStatusElement xdsStatusElement, final String[] values) {
+		final List children = xdsStatusElement.childElements();
 		trace.trace("status children: "+children);
 		if (children != null){
-			for (Object object : children) {
+			for (final Object object : children) {
 				if (object instanceof ElementImpl){
-					ElementImpl elem = (ElementImpl)object;
+					final ElementImpl elem = (ElementImpl)object;
 					trace.trace("status child: "+elem.localName());
 					trace.trace("status child: "+elem.tagName());
 				}
 			}
 		}
 
-		Set<LogField> schemaPositions = logFieldPositionMap.keySet();
-		for (Iterator<LogField> iterator = schemaPositions.iterator(); iterator.hasNext();) {
-			LogField logField = iterator.next();
+		final Set<LogField> schemaPositions = logFieldPositionMap.keySet();
+		for (LogField logField : schemaPositions) {
 			switch (logField) {
 			case LOGMESSAGE:
 				values[logFieldPositionMap.get(logField)] = xdsStatusElement.extractText();
 				break;
 			case LOGSTATUS:
-				StatusLevel level = xdsStatusElement.getLevel();
-				if (level==null)
+				final StatusLevel level = xdsStatusElement.getLevel();
+				if (level==null) {
 					values[logFieldPositionMap.get(logField)] = "";
-				else
+				} else {
 					values[logFieldPositionMap.get(logField)] = level.toString();
+				}
 				break;
 			case RECORDNUMBER:
 				values[logFieldPositionMap.get(logField)] = Integer.toString(recordNumber);

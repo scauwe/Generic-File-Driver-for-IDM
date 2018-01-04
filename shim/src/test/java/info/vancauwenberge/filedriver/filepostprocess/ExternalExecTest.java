@@ -1,3 +1,22 @@
+/*******************************************************************************
+ * Copyright (c) 2007, 2017 Stefaan Van Cauwenberge
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0 (the "License"). If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *  	 
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License for
+ * the specific language governing rights and limitations under the License.
+ *
+ * The Initial Developer of the Original Code is
+ * Stefaan Van Cauwenberge. Portions created by
+ *  the Initial Developer are Copyright (C) 2007, 2017 by
+ * Stefaan Van Cauwenberge. All Rights Reserved.
+ *
+ * Contributor(s): none so far.
+ *    Stefaan Van Cauwenberge: Initial API and implementation
+ *******************************************************************************/
 package info.vancauwenberge.filedriver.filepostprocess;
 
 import static org.junit.Assert.assertEquals;
@@ -9,7 +28,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.mockito.Answers;
 import org.mockito.Mock;
 
@@ -28,23 +49,28 @@ public class ExternalExecTest extends AbstractStrategyTest{
 	@Mock
 	ISubscriberShim subscriber;
 
+	//The Folder will be created before each test method and (recursively) deleted after each test method.
+	@Rule
+	public TemporaryFolder temporaryFolder = new TemporaryFolder();
+
 	@Test
 	public void testShortCommand() throws Exception {
 		final Trace trace = new Trace(">");
+
 		final ParamMap params = new ParamMap();
-		//No clue how the Parameter works, so just overwrite what we need...
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_MAXWAITTIMESECONDS.getParameterName(), 1000);
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_COMMAND.getParameterName(), "dir . $PARENTPATH$ $FILEPATH$ $FILENAME$");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_WORKDIR.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_CONNECTURLTRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_USERNAMETRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_PASSWORDTRIGGER.getParameterName(), "");
-		final ExternalExec exec = new ExternalExec();
 
-		exec.init(trace,params,driver);
-		final File f = new File(System.getProperty("java.io.tmpdir"));
+		final ExternalExec testSubject = new ExternalExec();
+		testSubject.init(trace,params,driver);
+
+		final File f = temporaryFolder.newFile();
 		final long startTime = System.currentTimeMillis();
-		exec.doPostProcess(f);
+		testSubject.doPostProcess(f);
 		final long endTime = System.currentTimeMillis();
 		assertTrue((endTime-startTime) < 100000);//Should be faster than 100 seconds
 	}
@@ -60,26 +86,26 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_CONNECTURLTRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_USERNAMETRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_PASSWORDTRIGGER.getParameterName(), "");
-		final ExternalExec exec = new ExternalExec();
 
-		exec.init(trace,params,driver);
-		final File f = new File(System.getProperty("java.io.tmpdir"));
+		final ExternalExec testSubject = new ExternalExec();
+		testSubject.init(trace,params,driver);
+
+		final File f = temporaryFolder.newFile();
 		final long startTime = System.currentTimeMillis();
-		exec.doPostProcess(f);
+		testSubject.doPostProcess(f);
 		final long endTime = System.currentTimeMillis();
 		assertTrue((endTime-startTime) > 5000);//Should be 10 seconds or more
 	}
 
 	@Test
 	public void testWorkingDirConfigured() throws Exception {
+		//This test is OS specific
 		final Trace trace = new Trace(">");
 		final ParamMap params = new ParamMap();
-		final String workdir = System.getProperty("java.io.tmpdir"); 
+		final File explicitWorkDir = temporaryFolder.newFolder("aSubFolder");
+		final String workdir = explicitWorkDir.getAbsolutePath();//System.getProperty("java.io.tmpdir"); 
 		//Create a temp file in the current working dir		
-		final File tmpFile;
-		//We will echo the working dir in the file. This test is OS specific
-		tmpFile = File.createTempFile("test", ".tmp", new File(System.getProperty("user.dir")));
-		tmpFile.deleteOnExit();
+		final File tmpFile = temporaryFolder.newFile();
 
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_MAXWAITTIMESECONDS.getParameterName(), 1000);
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_COMMAND.getParameterName(), "cmd /C \"echo %cd%>> \""+tmpFile.getAbsolutePath()+"\"\"");
@@ -88,29 +114,25 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_CONNECTURLTRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_USERNAMETRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_PASSWORDTRIGGER.getParameterName(), "");
-		final ExternalExec exec = new ExternalExec();
 
-		exec.init(trace,params,driver);
-		//The file should not reside in the workdir this time!!!
-		final File f = new File("C:\\temp\\test.csv");
+		final ExternalExec testSubject = new ExternalExec();
+		testSubject.init(trace,params,driver);
+
+		final File f = temporaryFolder.newFile();
+		testSubject.doPostProcess(f);
+
 		final FileReader fr = new FileReader(tmpFile);
 		final BufferedReader br = new BufferedReader(fr);
-		exec.doPostProcess(f);
-		assertEquals(new File(workdir).getAbsolutePath(), br.readLine());
+		assertEquals(workdir, br.readLine());
 		br.close();
 	}
 
 	@Test
 	public void testWorkingDirFallBack() throws Exception {
 		final Trace trace = new Trace(">");
-		final ParamMap params = new ParamMap();
-		final String workdir = System.getProperty("java.io.tmpdir"); 
-		//Create a temp file in the current working dir		
-		final File tmpFile;
-		//We will echo the working dir in the file. This test is OS specific
-		tmpFile = File.createTempFile("test", ".tmp", new File(System.getProperty("user.dir")));
-		tmpFile.deleteOnExit();
+		final File tmpFile = temporaryFolder.newFile();
 
+		final ParamMap params = new ParamMap();
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_MAXWAITTIMESECONDS.getParameterName(), 1000);
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_COMMAND.getParameterName(), "cmd /C \"echo %cd%>> \""+tmpFile.getAbsolutePath()+"\"\"");
 		//No working dir configured.
@@ -118,15 +140,18 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_CONNECTURLTRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_USERNAMETRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_PASSWORDTRIGGER.getParameterName(), "");
-		final ExternalExec exec = new ExternalExec();
 
-		exec.init(trace,params,driver);
+		final ExternalExec testSubject = new ExternalExec();
+		testSubject.init(trace,params,driver);
+
 		//The file should not reside in the workdir this time!!!
-		final File f = new File(workdir+File.separatorChar+"dummy.csv");
+		final File workDir = temporaryFolder.newFolder();
+		final File f = new File(workDir,"dummy.csv");
+		testSubject.doPostProcess(f);
+
 		final FileReader fr = new FileReader(tmpFile);
 		final BufferedReader br = new BufferedReader(fr);
-		exec.doPostProcess(f);
-		assertEquals(new File(workdir).getAbsolutePath(), br.readLine());
+		assertEquals(workDir.getAbsolutePath(), br.readLine());
 		br.close();
 	}
 
@@ -136,14 +161,9 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		//$FILENAME$   out.csv
 		//$FILEPATH$   C:\temp\out.csv
 		final Trace trace = new Trace(">");
-		final ParamMap params = new ParamMap();
-		final String workdir = System.getProperty("java.io.tmpdir"); 
-		//Create a temp file in the current working dir		
-		final File tmpFile;
-		//We will echo the working dir in the file. This test is OS specific
-		tmpFile = File.createTempFile("test", ".tmp", new File(System.getProperty("user.dir")));
-		tmpFile.deleteOnExit();
+		final File tmpFile = temporaryFolder.newFile();
 
+		final ParamMap params = new ParamMap();
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_MAXWAITTIMESECONDS.getParameterName(), 1000);
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_COMMAND.getParameterName(), "cmd /C \"echo $PARENTPATH$ $FILENAME$ $FILEPATH$>> \""+tmpFile.getAbsolutePath()+"\"\"");
 		//No working dir configured.
@@ -151,14 +171,16 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_CONNECTURLTRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_USERNAMETRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_PASSWORDTRIGGER.getParameterName(), "");
-		final ExternalExec exec = new ExternalExec();
 
-		exec.init(trace,params,driver);
+		final ExternalExec testSubject = new ExternalExec();
+		testSubject.init(trace,params,driver);
 		//The file should not reside in the workdir this time!!!
-		final File f = new File(workdir+File.separatorChar+"dummy.csv");
+		final File tmpFFolder = temporaryFolder.newFolder();
+		final File f = new File(tmpFFolder,"dummy.tst");
+		testSubject.doPostProcess(f);
+
 		final FileReader fr = new FileReader(tmpFile);
 		final BufferedReader br = new BufferedReader(fr);
-		exec.doPostProcess(f);
 		assertEquals(f.getParent()+" "+f.getName()+" "+f.getAbsolutePath(), br.readLine());
 		br.close();
 	}
@@ -169,14 +191,9 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		//$FILENAME$   out.csv
 		//$FILEPATH$   C:\temp\out.csv
 		final Trace trace = new Trace(">");
-		final ParamMap params = new ParamMap();
-		final String workdir = System.getProperty("java.io.tmpdir"); 
-		//Create a temp file in the current working dir		
-		final File tmpFile;
-		//We will echo the working dir in the file. This test is OS specific
-		tmpFile = File.createTempFile("test", ".tmp", new File(System.getProperty("user.dir")));
-		tmpFile.deleteOnExit();
+		final File tmpFile = temporaryFolder.newFile();
 
+		final ParamMap params = new ParamMap();
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_MAXWAITTIMESECONDS.getParameterName(), 1000);
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_COMMAND.getParameterName(), "cmd /C \"echo $PARENTPATH$ $FILENAME$ $FILEPATH$ $CONNECTUSER$ $CONNECTPASSWORD$ $CONNECTURL$>> \""+tmpFile.getAbsolutePath()+"\"");
 		//No working dir configured.
@@ -184,18 +201,21 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_CONNECTURLTRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_USERNAMETRIGGER.getParameterName(), "");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_PASSWORDTRIGGER.getParameterName(), "");
-		final ExternalExec exec = new ExternalExec();
+
+		final ExternalExec testSubject = new ExternalExec();
 		final IDriver driver = mock(IDriver.class);
 		final ISubscriberShim subscriber = mock(ISubscriberShim.class);
 		when(subscriber.getConnectionInfo()).thenReturn(new ConnectionInfo("aPassword", "aUserName", "aConnectURL"));
 		when(driver.getSubscriber()).thenReturn(subscriber);
 
-		exec.init(trace,params,driver);
+		testSubject.init(trace,params,driver);
 		//The file should not reside in the workdir this time!!!
-		final File f = new File(workdir+File.separatorChar+"dummy.csv");
+		final File tmpFFolder = temporaryFolder.newFolder();
+		final File f = new File(tmpFFolder,"dummy.tst");
+		testSubject.doPostProcess(f);
+
 		final FileReader fr = new FileReader(tmpFile);
 		final BufferedReader br = new BufferedReader(fr);
-		exec.doPostProcess(f);
 		assertEquals(f.getParent()+" "+f.getName()+" "+f.getAbsolutePath()+" aUserName aPassword aConnectURL", br.readLine());
 		br.close();
 	}
@@ -206,14 +226,9 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		//$FILENAME$   out.csv
 		//$FILEPATH$   C:\temp\out.csv
 		final Trace trace = new Trace(">");
-		final ParamMap params = new ParamMap();
-		final String workdir = System.getProperty("java.io.tmpdir"); 
-		//Create a temp file in the current working dir		
-		final File tmpFile;
-		//We will echo the working dir in the file. This test is OS specific
-		tmpFile = File.createTempFile("test", ".tmp", new File(System.getProperty("user.dir")));
-		tmpFile.deleteOnExit();
+		final File tmpFile = temporaryFolder.newFile();
 
+		final ParamMap params = new ParamMap();
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_MAXWAITTIMESECONDS.getParameterName(), 3);
 		//set /P id="Enter token:" & call echo %^id%>C:\temp\tmp.out
 
@@ -224,18 +239,21 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_CONNECTURLTRIGGER.getParameterName(), "Enter URL:");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_USERNAMETRIGGER.getParameterName(), "Enter token:");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_PASSWORDTRIGGER.getParameterName(), "Enter password:");
-		final ExternalExec exec = new ExternalExec();
+
+		final ExternalExec testSubject = new ExternalExec();
 		final IDriver driver = mock(IDriver.class);
 		final ISubscriberShim subscriber = mock(ISubscriberShim.class);
 		when(subscriber.getConnectionInfo()).thenReturn(new ConnectionInfo("aPassword", "aUserName", "aConnectURL"));
 		when(driver.getSubscriber()).thenReturn(subscriber);
 
-		exec.init(trace,params,driver);
+		testSubject.init(trace,params,driver);
 		//The file should not reside in the workdir this time!!!
-		final File f = new File(workdir+File.separatorChar+"dummy.csv");
+		final File tmpFFolder = temporaryFolder.newFolder();
+		final File f = new File(tmpFFolder,"dummy.tst");
+		testSubject.doPostProcess(f);
+
 		final FileReader fr = new FileReader(tmpFile);
 		final BufferedReader br = new BufferedReader(fr);
-		exec.doPostProcess(f);
 		assertEquals("aUserName", br.readLine());
 		br.close();
 	}
@@ -246,14 +264,9 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		//$FILENAME$   out.csv
 		//$FILEPATH$   C:\temp\out.csv
 		final Trace trace = new Trace(">");
-		final ParamMap params = new ParamMap();
-		final String workdir = System.getProperty("java.io.tmpdir"); 
-		//Create a temp file in the current working dir		
-		final File tmpFile;
-		//We will echo the working dir in the file. This test is OS specific
-		tmpFile = File.createTempFile("test", ".tmp", new File(System.getProperty("user.dir")));
-		tmpFile.deleteOnExit();
+		final File tmpFile = temporaryFolder.newFile();
 
+		final ParamMap params = new ParamMap();
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_MAXWAITTIMESECONDS.getParameterName(), 3);
 		//set /P id="Enter token:" & call echo %^id%>C:\temp\tmp.out
 
@@ -264,18 +277,21 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_CONNECTURLTRIGGER.getParameterName(), "Enter URL:");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_USERNAMETRIGGER.getParameterName(), "Enter token:");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_PASSWORDTRIGGER.getParameterName(), "Enter password:");
-		final ExternalExec exec = new ExternalExec();
+
+		final ExternalExec testSubject = new ExternalExec();
 		final IDriver driver = mock(IDriver.class);
 		final ISubscriberShim subscriber = mock(ISubscriberShim.class);
 		when(subscriber.getConnectionInfo()).thenReturn(new ConnectionInfo("aPassword", "aUserName", "aConnectURL"));
 		when(driver.getSubscriber()).thenReturn(subscriber);
 
-		exec.init(trace,params,driver);
+		testSubject.init(trace,params,driver);
 		//The file should not reside in the workdir this time!!!
-		final File f = new File(workdir+File.separatorChar+"dummy.csv");
+		final File tmpFFolder = temporaryFolder.newFolder();
+		final File f = new File(tmpFFolder,"dummy.tst");
+		testSubject.doPostProcess(f);
+
 		final FileReader fr = new FileReader(tmpFile);
 		final BufferedReader br = new BufferedReader(fr);
-		exec.doPostProcess(f);
 		assertEquals("aPassword", br.readLine());
 		br.close();
 	}
@@ -286,14 +302,9 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		//$FILENAME$   out.csv
 		//$FILEPATH$   C:\temp\out.csv
 		final Trace trace = new Trace(">");
-		final ParamMap params = new ParamMap();
-		final String workdir = System.getProperty("java.io.tmpdir"); 
-		//Create a temp file in the current working dir		
-		final File tmpFile;
-		//We will echo the working dir in the file. This test is OS specific
-		tmpFile = File.createTempFile("test", ".tmp", new File(System.getProperty("user.dir")));
-		tmpFile.deleteOnExit();
+		final File tmpFile = temporaryFolder.newFile();
 
+		final ParamMap params = new ParamMap();
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_MAXWAITTIMESECONDS.getParameterName(), 3);
 		//set /P id="Enter token:" & call echo %^id%>C:\temp\tmp.out
 
@@ -304,18 +315,21 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_CONNECTURLTRIGGER.getParameterName(), "Enter URL:");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_USERNAMETRIGGER.getParameterName(), "Enter token:");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_PASSWORDTRIGGER.getParameterName(), "Enter password:");
-		final ExternalExec exec = new ExternalExec();
+
+		final ExternalExec testSubject = new ExternalExec();
 		final IDriver driver = mock(IDriver.class);
 		final ISubscriberShim subscriber = mock(ISubscriberShim.class);
 		when(subscriber.getConnectionInfo()).thenReturn(new ConnectionInfo("aPassword", "aUserName", "aConnectURL"));
 		when(driver.getSubscriber()).thenReturn(subscriber);
 
-		exec.init(trace,params,driver);
+		testSubject.init(trace,params,driver);
 		//The file should not reside in the workdir this time!!!
-		final File f = new File(workdir+File.separatorChar+"dummy.csv");
+		final File tmpFFolder = temporaryFolder.newFolder();
+		final File f = new File(tmpFFolder,"dummy.tst");
+		testSubject.doPostProcess(f);
+
 		final FileReader fr = new FileReader(tmpFile);
 		final BufferedReader br = new BufferedReader(fr);
-		exec.doPostProcess(f);
 		assertEquals("aConnectURL", br.readLine());
 		br.close();
 	}
@@ -326,14 +340,9 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		//$FILENAME$   out.csv
 		//$FILEPATH$   C:\temp\out.csv
 		final Trace trace = new Trace(">");
-		final ParamMap params = new ParamMap();
-		final String workdir = System.getProperty("java.io.tmpdir"); 
-		//Create a temp file in the current working dir		
-		final File tmpFile;
-		//We will echo the working dir in the file. This test is OS specific
-		tmpFile = File.createTempFile("test", ".tmp", new File(System.getProperty("user.dir")));
-		tmpFile.deleteOnExit();
+		final File tmpFile = temporaryFolder.newFile();
 
+		final ParamMap params = new ParamMap();
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_MAXWAITTIMESECONDS.getParameterName(), 3);
 		//set /P id="Enter token:" & call echo %^id%>C:\temp\tmp.out
 
@@ -346,18 +355,21 @@ public class ExternalExecTest extends AbstractStrategyTest{
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_CONNECTURLTRIGGER.getParameterName(), "Enter URL:");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_USERNAMETRIGGER.getParameterName(), "Enter token:");
 		params.putParameter(ExternalExec.Parameters.EXTERNALEXEC_PASSWORDTRIGGER.getParameterName(), "Enter password:");
-		final ExternalExec exec = new ExternalExec();
+
+		final ExternalExec testSubject = new ExternalExec();
 		final IDriver driver = mock(IDriver.class);
 		final ISubscriberShim subscriber = mock(ISubscriberShim.class);
 		when(subscriber.getConnectionInfo()).thenReturn(new ConnectionInfo("aPassword", "aUserName", "aConnectURL"));
 		when(driver.getSubscriber()).thenReturn(subscriber);
 
-		exec.init(trace,params,driver);
+		testSubject.init(trace,params,driver);
 		//The file should not reside in the workdir this time!!!
-		final File f = new File(workdir+File.separatorChar+"dummy.csv");
+		final File tmpFFolder = temporaryFolder.newFolder();
+		final File f = new File(tmpFFolder,"dummy.tst");
+		testSubject.doPostProcess(f);
+
 		final FileReader fr = new FileReader(tmpFile);
 		final BufferedReader br = new BufferedReader(fr);
-		exec.doPostProcess(f);
 		assertEquals("aUserName ", br.readLine());
 		assertEquals("aPassword ", br.readLine());
 		assertEquals("aConnectURL", br.readLine());

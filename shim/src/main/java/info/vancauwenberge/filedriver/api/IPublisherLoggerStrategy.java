@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2007-2016 Stefaan Van Cauwenberge
+ * Copyright (c) 2007-2017 Stefaan Van Cauwenberge
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0 (the "License"). If a copy of the MPL was not distributed with this
@@ -19,15 +19,14 @@
  *******************************************************************************/
 package info.vancauwenberge.filedriver.api;
 
-import info.vancauwenberge.filedriver.exception.WriteException;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.EnumMap;
 import java.util.Map;
 
-import com.novell.nds.dirxml.driver.xds.XDSCommandDocument;
 import com.novell.nds.dirxml.driver.xds.XDSStatusElement;
+
+import info.vancauwenberge.filedriver.exception.WriteException;
 
 public interface IPublisherLoggerStrategy extends IPublisherStrategy {
 	public enum LogField{
@@ -43,18 +42,18 @@ public interface IPublisherLoggerStrategy extends IPublisherStrategy {
 	 * @throws IOException
 	 */
 	public void openFile(File f, String[] schema, EnumMap<LogField, String> logFieldSchemaMap) throws WriteException;
-    /**
-     * Write one record to the file.
-     * @param m A map of key/value pairs. The key is the fieldname (String), the value is the String value for that field. Value can be null.
-     * @return 
-     * @throws IOException
-     */
-    public void logCommand(int recordNumber, Map<String,String> thisRecord, XDSStatusElement xdsStatusElement) throws WriteException;
-    /**
-     * Tells the logger that no more records will be added to this file. 
-     * The writer should release all resources associated with the file and close the file.
-     * @throws IOException
-     */
-    public File close() throws WriteException;
+	/**
+	 * Write one record to the file.
+	 * @param m A map of key/value pairs. The key is the fieldname (String), the value is the String value for that field. Value can be null.
+	 * @return 
+	 * @throws IOException
+	 */
+	public void logCommand(int recordNumber, Map<String,String> thisRecord, XDSStatusElement xdsStatusElement) throws WriteException;
+	/**
+	 * Tells the logger that no more records will be added to this file. 
+	 * The writer should release all resources associated with the file and close the file.
+	 * @throws IOException
+	 */
+	public File close() throws WriteException;
 
 }
