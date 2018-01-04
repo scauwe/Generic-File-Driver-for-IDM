@@ -29,13 +29,17 @@ public class ReadException extends Exception {
 	 * @param message
 	 * @param cause
 	 */
-	public ReadException(String message, Exception cause) {
+	public ReadException(final String message, final Exception cause) {
 		super(message,cause);
 	}
 	/**
 	 * @param cause
 	 */
-	public ReadException(Exception cause) {
+	public ReadException(final Exception cause) {
 		super(cause);
+	}
+
+	public ReadException(final String message) {
+		super(message);
 	}
 }
