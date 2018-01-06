@@ -29,7 +29,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Base64;
-import java.util.Base64.Encoder;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -43,6 +42,7 @@ import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 
@@ -55,6 +55,7 @@ import com.novell.nds.dirxml.driver.xds.DataType;
 import com.novell.nds.dirxml.driver.xds.EnumConstraint;
 import com.novell.nds.dirxml.driver.xds.Parameter;
 import com.novell.nds.dirxml.driver.xds.XDSParameterException;
+import com.novell.xml.util.Base64Codec;
 
 import info.vancauwenberge.filedriver.SysoutTrace;
 import info.vancauwenberge.filedriver.api.AbstractStrategy;
@@ -80,8 +81,8 @@ public class ImageFileReader extends AbstractStrategy implements IFileReadStrate
 	private int resizeWidth;
 	private boolean transcode;
 	private String transcodeTargetFormat;
-	private final Encoder base64Encoder = Base64.getEncoder();
-
+	///private final Encoder base64Encoder = Base64.getEncoder();
+	//Base64Codec base64Encoder = new Base64Codec();
 	/**
 	 * ImageInputStream to the newly opened file.
 	 * null if no file was opened or of the file was read.
@@ -432,7 +433,7 @@ public class ImageFileReader extends AbstractStrategy implements IFileReadStrate
 		//		 * Reading the metadata does not yet work. I seem unable to get it...
 
 		if (includeImageMeta && srcImageMetaData.isStandardMetadataFormatSupported()){
-			final Element metaTree = (Element) srcImageMetaData.getAsTree("javax_imageio_jpeg_image_1.0");//IIOMetadataFormatImpl.standardMetadataFormatName);
+			final Element metaTree = (Element) srcImageMetaData.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);//"javax_imageio_jpeg_image_1.0");//
 			printSubtree(metaTree,0);
 			/*
 			final NodeList textElements = ((Element) metaTree.getFirstChild()).getElementsByTagName("Text");
@@ -469,7 +470,7 @@ public class ImageFileReader extends AbstractStrategy implements IFileReadStrate
 		imgReader.dispose();
 
 		final byte[] imgBytes = baos.toByteArray();
-		result.put(FIELD_IMAGE_BYTES, base64Encoder.encodeToString(imgBytes));
+		result.put(FIELD_IMAGE_BYTES, new String(Base64Codec.encode(imgBytes)));
 
 		return result;
 	}
