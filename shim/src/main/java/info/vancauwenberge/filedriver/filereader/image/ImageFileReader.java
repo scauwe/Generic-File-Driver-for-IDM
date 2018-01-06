@@ -31,6 +31,7 @@ import java.io.OutputStream;
 import java.util.Base64;
 import java.util.Base64.Encoder;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
@@ -44,6 +45,9 @@ import javax.imageio.ImageWriter;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
+
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 import com.novell.nds.dirxml.driver.Trace;
 import com.novell.nds.dirxml.driver.xds.Constraint;
@@ -82,7 +86,8 @@ public class ImageFileReader extends AbstractStrategy implements IFileReadStrate
 	 * ImageInputStream to the newly opened file.
 	 * null if no file was opened or of the file was read.
 	 */
-	private ImageInputStream inputStream=null; 
+	private ImageInputStream inputStream=null;
+	private boolean includeImageMeta; 
 
 	protected enum Parameters implements IStrategyParameters{
 		/**
@@ -188,7 +193,27 @@ public class ImageFileReader extends AbstractStrategy implements IFileReadStrate
 			public DataType getDataType() {
 				return DataType.INT ;
 			}
-		};
+		},
+		/**
+		 * Should the image meta data be added (if any)
+		 */
+		IMAGE_META {
+			@Override
+			public String getParameterName() {
+				return "imgReader_includeMeta";
+			}
+
+			@Override
+			public String getDefaultValue() {
+				return "false";
+			}
+
+			@Override
+			public DataType getDataType() {
+				return DataType.BOOLEAN;
+			}
+		},
+		;
 
 		@Override
 		public abstract String getParameterName();
@@ -217,6 +242,8 @@ public class ImageFileReader extends AbstractStrategy implements IFileReadStrate
 			trace.trace("ImageFileReader.init() driverParams:"+driverParams);
 		}
 		this.trace = trace;
+
+		this.includeImageMeta = getBoolValueFor(Parameters.IMAGE_META, driverParams);
 
 		this.resize = getBoolValueFor(Parameters.RESIZE,driverParams);
 		if (this.resize){
@@ -323,11 +350,11 @@ public class ImageFileReader extends AbstractStrategy implements IFileReadStrate
 	 * 
 	 * @param f
 	 * @return
-	 * @throws IOException
-	 * @throws NoSuchElementException if the image file type is not supported
+	 * @throws ReadException 
+	 * @throws IOException if the image file type is not supported
 	 */
-	private Map<String,String> getImageDataMap() throws IOException, NoSuchElementException {
-		final Map<String,String> result = new HashMap<>();
+	private Map<String,String> getImageDataMap() throws ReadException, IOException {
+		final Map<String,String> result = new HashMap<String, String>();
 
 		final ImageReader imgReader = ImageIO.getImageReaders(inputStream).next();
 		trace.trace("Reading image of type:"+imgReader.getFormatName());
@@ -371,7 +398,17 @@ public class ImageFileReader extends AbstractStrategy implements IFileReadStrate
 		//Get the image writer. If transcoding, get a specific one, otherwise get the one corresponding to the input
 		final ImageWriter imgWriter;
 		if (transcode){
-			imgWriter = ImageIO.getImageWritersByFormatName(transcodeTargetFormat).next();
+			final Iterator<ImageWriter> writers = ImageIO.getImageWriters(imageSrcDestType, transcodeTargetFormat);
+			if (writers.hasNext()) {
+				imgWriter = writers.next();
+			} else {
+				final Iterator<ImageWriter> writers2 = ImageIO.getImageWritersByFormatName(transcodeTargetFormat);
+				if (writers2.hasNext()) {
+					imgWriter = writers2.next();
+				}else{
+					throw new ReadException("No image writer found for format "+transcodeTargetFormat);
+				}
+			}
 			result.put(FIELD_IMAGE_FORMAT, transcodeTargetFormat);
 		}
 		else{
@@ -392,6 +429,32 @@ public class ImageFileReader extends AbstractStrategy implements IFileReadStrate
 		imgWriter.setOutput(imageos);
 
 		final IIOMetadata srcImageMetaData = imgReader.getImageMetadata(0);
+		//		 * Reading the metadata does not yet work. I seem unable to get it...
+
+		if (includeImageMeta && srcImageMetaData.isStandardMetadataFormatSupported()){
+			final Element metaTree = (Element) srcImageMetaData.getAsTree("javax_imageio_jpeg_image_1.0");//IIOMetadataFormatImpl.standardMetadataFormatName);
+			printSubtree(metaTree,0);
+			/*
+			final NodeList textElements = ((Element) metaTree.getFirstChild()).getElementsByTagName("Text");
+			if (textElements != null){
+				for (int i = 0; i < textElements.getLength(); i++) {
+					final Element aTextNode = (Element) textElements.item(i);
+					final NodeList textElementEntries = aTextNode.getElementsByTagName("TextEntry");
+					if (textElementEntries != null){
+						for (int j = 0; j < textElementEntries.getLength(); j++) {
+							final Node node = textElementEntries.item(j);
+							final String keyword = node.getAttributes().getNamedItem("keyword").getNodeValue();
+							if (keyword==null){
+								trace.trace("Not including meta parameter that has no keyword");
+							}else{
+								final String value = node.getAttributes().getNamedItem("value").getNodeValue();
+								result.put("_meta_"+keyword, value);
+							}
+						}
+					}
+				}
+			}*/
+		}
 		final IIOImage image = new IIOImage(scaledImage, null, srcImageMetaData);
 
 		final ImageWriteParam writeParams = imgWriter.getDefaultWriteParam();
@@ -410,6 +473,19 @@ public class ImageFileReader extends AbstractStrategy implements IFileReadStrate
 
 		return result;
 	}
+
+	private void printSubtree(final Element metaTree, final int i) {
+		// TODO Auto-generated method stub
+		for (int j = 0; j < i; j++) {
+			System.out.print("  ");
+		}
+		System.out.println(metaTree.getTagName());
+		final NodeList children = metaTree.getChildNodes();
+		for (int j = 0; j < children.getLength(); j++) {
+			printSubtree((Element) children.item(j), i+1);
+		}
+	}
+
 
 	public static void main(final String[] args){
 		Trace.registerImpl(SysoutTrace.class, 0);
