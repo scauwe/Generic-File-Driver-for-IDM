@@ -22,11 +22,6 @@ package info.vancauwenberge.filedriver.shim;
 import java.util.HashMap;
 import java.util.Map;
 
-import info.vancauwenberge.filedriver.filepublisher.FileDriverPublicationShimImpl;
-import info.vancauwenberge.filedriver.filepublisher.IPublisherImplStrategy;
-import info.vancauwenberge.filedriver.shim.driver.GenericFileDriverShim;
-import info.vancauwenberge.filedriver.util.Util;
-
 import com.novell.nds.dirxml.driver.PublicationShim;
 import com.novell.nds.dirxml.driver.XmlCommandProcessor;
 import com.novell.nds.dirxml.driver.XmlDocument;
@@ -45,97 +40,105 @@ import com.novell.nds.dirxml.driver.xds.XDSResultDocument;
 import com.novell.nds.dirxml.driver.xds.util.StatusAttributes;
 import com.novell.nds.dirxml.driver.xds.util.XDSUtil;
 
+import info.vancauwenberge.filedriver.filepublisher.FileDriverPublicationShimImpl;
+import info.vancauwenberge.filedriver.filepublisher.IPublisherImplStrategy;
+import info.vancauwenberge.filedriver.shim.driver.GenericFileDriverShim;
+import info.vancauwenberge.filedriver.util.Util;
+
 public class FileDriverPublicationShim  extends ChannelShim implements PublicationShim, XmlQueryProcessor{
-	
-    static public final String DEFAULT_PUB_HEARTBEAT_INTERVAL = "0"; //minutes (disabled)
-	
+
+	static public final String DEFAULT_PUB_HEARTBEAT_INTERVAL = "0"; //minutes (disabled)
+
 	private static final String PUB_IMPL_CLASS = "pub_impl_class";
 	private static final String DEFAULT_IMPL_CLASS = FileDriverPublicationShimImpl.class.getName();
 	static final private String TRACE_SUFFIX = "PT";
 
-	
+
 	private IPublisherImplStrategy  publicationShimImpl;
-	
-	public FileDriverPublicationShim(GenericFileDriverShim someDriver) {
+
+	public FileDriverPublicationShim(final GenericFileDriverShim someDriver) {
 		super(someDriver, TRACE_SUFFIX);
 	}
 
-	public XmlDocument query(XmlDocument arg0) {
+	@Override
+	public XmlDocument query(final XmlDocument arg0) {
 		return publicationShimImpl.query(arg0);
 	}
 
-	public XmlDocument init(XmlDocument initXML) {
-        trace.trace("init", 1);
+	@Override
+	public XmlDocument init(final XmlDocument initXML) {
+		trace.trace("init", 1);
+		//trace.trace("inputDoc"+initXML.getDocumentString(),1);
+		XDSResultDocument result;
+		StatusAttributes attrs;
 
-        XDSResultDocument result;
-        StatusAttributes attrs;
+		//create result document for reporting status to the DirXML engine
+		result = newResultDoc();
 
-        //create result document for reporting status to the DirXML engine
-        result = newResultDoc();
+		try
+		{
 
-        try
-        {
+			//parse initialization document
+			final XDSInitDocument init = new XDSInitDocument(initXML);
 
-        	//parse initialization document
-        	XDSInitDocument init = new XDSInitDocument(initXML);
+			//get any publisher options from init doc
+			final Map<String,Parameter> pubParams = getParameterDefs();
+			//Set and validate the parameters
+			init.parameters(pubParams);
 
-        	//get any publisher options from init doc
-        	Map<String,Parameter> pubParams = getParameterDefs();
-        	//Set and validate the parameters
-        	init.parameters(pubParams);
-        
-        	//get the implementation class
-        	String implClass = pubParams.get(PUB_IMPL_CLASS).toString();
-        	trace.trace("Creating publisher of class:"+implClass);
-    		publicationShimImpl = (IPublisherImplStrategy) Class.forName(implClass).newInstance();
-    		//Note: XDS limitation: you cannot evaluate twice the same parameter object (eg: the default SingleValueConstraint will fail) 
-    		//due to a limitation of the XDS implementation
-    		//For this reason, we create a new parameterDefs
-        	return publicationShimImpl.init(trace, getParameterDefs(), driver, initXML);
-        	
-        }//try
-        catch (ClassCastException e) //don't want to catch Error class with Throwable
-        {
-        	Util.printStackTrace(trace,e);
-        	attrs = StatusAttributes.factory(StatusLevel.FATAL,
-                StatusType.DRIVER_STATUS,
-                null); //event-id
-        	XDSUtil.appendStatus(result, //doc to append to
-        		attrs, //status attribute values
-				"One or more strategies specified in the publisher channel are not implementing the correct interface.", //description
-				e, //exception
-				XDSUtil.appendStackTrace(e), //append stack trace?
-				initXML); //xml to append
-        }
-        catch (Exception e) //don't want to catch Error class with Throwable
-        {
-        	Util.printStackTrace(trace, e);
-        	//e instance of XDSException:
-        	//
-        	//  init document is malformed or invalid -- or --
-        	//  it is missing required parameters or contains
-        	//  illegal parameter values
+			//get the implementation class
+			final String implClass = pubParams.get(PUB_IMPL_CLASS).toString();
+			trace.trace("Creating publisher of class:"+implClass);
+			publicationShimImpl = (IPublisherImplStrategy) Class.forName(implClass).newInstance();
+			//Note: XDS limitation: you cannot evaluate twice the same parameter object (eg: the default SingleValueConstraint will fail) 
+			//due to a limitation of the XDS implementation
+			//For this reason, we create a new parameterDefs
+			return publicationShimImpl.init(trace, getParameterDefs(), driver, initXML);
 
-        	//e instance of RuntimeException:
+		}//try
+		catch (final ClassCastException e) //don't want to catch Error class with Throwable
+		{
+			Util.printStackTrace(trace,e);
+			attrs = StatusAttributes.factory(StatusLevel.FATAL,
+					StatusType.DRIVER_STATUS,
+					null); //event-id
+			XDSUtil.appendStatus(result, //doc to append to
+					attrs, //status attribute values
+					"One or more strategies specified in the publisher channel are not implementing the correct interface.", //description
+					e, //exception
+					XDSUtil.appendStackTrace(e), //append stack trace?
+					initXML); //xml to append
+		}
+		catch (final Exception e) //don't want to catch Error class with Throwable
+		{
+			Util.printStackTrace(trace, e);
+			//e instance of XDSException:
+			//
+			//  init document is malformed or invalid -- or --
+			//  it is missing required parameters or contains
+			//  illegal parameter values
 
-        	//  e.g., NullPointerException
+			//e instance of RuntimeException:
 
-        	attrs = StatusAttributes.factory(StatusLevel.FATAL,
-                                         StatusType.DRIVER_STATUS,
-                                         null); //event-id
-        	XDSUtil.appendStatus(result, //doc to append to
-                             attrs, //status attribute values
-                             null, //description
-                             e, //exception
-                             XDSUtil.appendStackTrace(e), //append stack trace?
-                             initXML); //xml to append
-        }//catch
+			//  e.g., NullPointerException
 
-        return result.toXML();
+			attrs = StatusAttributes.factory(StatusLevel.FATAL,
+					StatusType.DRIVER_STATUS,
+					null); //event-id
+			XDSUtil.appendStatus(result, //doc to append to
+					attrs, //status attribute values
+					null, //description
+					e, //exception
+					XDSUtil.appendStackTrace(e), //append stack trace?
+					initXML); //xml to append
+		}//catch
+
+		return result.toXML();
 
 	}
 
-	public XmlDocument start(XmlCommandProcessor arg0) {
+	@Override
+	public XmlDocument start(final XmlCommandProcessor arg0) {
 		driver.onStart(arg0);
 		return publicationShimImpl.start(arg0);
 	}
@@ -144,46 +147,51 @@ public class FileDriverPublicationShim  extends ChannelShim implements Publicati
 	 * 
 	 * Extend the schema (User class) with the meta data requested
 	 */
-	public void extendSchema(XDSClassDefElement userClassDef,
-			XmlDocument initXML) throws XDSParseException,
-			XDSParameterException {
+	public void extendSchema(final XDSClassDefElement userClassDef,
+			final XmlDocument initXML) throws XDSParseException,
+	XDSParameterException {
 		//This is called when init/shutdown is not called.
 		if (publicationShimImpl == null){
 			init(initXML);
 		}
-		if (publicationShimImpl != null)
+		if (publicationShimImpl != null) {
 			publicationShimImpl.extendSchema(userClassDef, initXML);
+		}
 	}
 
 	@Override
-	public void shutdown(XDSResultDocument result) {
-		publicationShimImpl.shutdown(result);
+	public void shutdown(final XDSResultDocument result) {
+		//Test for null. Failure to start the driver might leave us with a null implementation
+		if (publicationShimImpl != null) {
+			publicationShimImpl.shutdown(result);
+		}
 	}
 
-	
+
+	@Override
 	protected Map<String, Parameter> getParameterDefs() {
-		HashMap<String, Parameter> map = new HashMap<String, Parameter>();
+		final HashMap<String, Parameter> map = new HashMap<String, Parameter>();
 		//Add our own and the common parameters:
-		
-		
+
+
 		//heartbeat
 		Parameter param = new Parameter(IPublisherImplStrategy.PUB_HEARTBEAT_INTERVAL,
-                DEFAULT_PUB_HEARTBEAT_INTERVAL,
-                DataType.INT);
+				DEFAULT_PUB_HEARTBEAT_INTERVAL,
+				DataType.INT);
 		param.add(RangeConstraint.NON_NEGATIVE); //ensures >= 0
 		map.put(IPublisherImplStrategy.PUB_HEARTBEAT_INTERVAL, param);
-		
-		
+
+
 		//the actual implementation class
 		param = new Parameter(PUB_IMPL_CLASS,
-                DEFAULT_IMPL_CLASS,
-                DataType.STRING);
+				DEFAULT_IMPL_CLASS,
+				DataType.STRING);
 		param.add(RequiredConstraint.REQUIRED);
-		
+
 		map.put(param.tagName(), param);
-		
+
 		return map;
 	}
-	
+
 
 }
