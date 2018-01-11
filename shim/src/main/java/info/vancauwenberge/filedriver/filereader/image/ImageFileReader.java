@@ -19,6 +19,7 @@
  *******************************************************************************/
 package info.vancauwenberge.filedriver.filereader.image;
 
+import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
@@ -38,6 +39,7 @@ import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
+import javax.imageio.ImageTranscoder;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
@@ -88,9 +90,30 @@ public class ImageFileReader extends AbstractStrategy implements IFileReadStrate
 	 * null if no file was opened or of the file was read.
 	 */
 	private ImageInputStream inputStream=null;
-	private boolean includeImageMeta; 
+	private boolean includeImageMeta;
+	private Color paddingColor;
+	private boolean resizeExact; 
 
 	protected enum Parameters implements IStrategyParameters{
+		/**
+		 * Should the image be resized or not
+		 */
+		/*RESIZE_STRUCT {
+			@Override
+			public String getParameterName() {
+				return "imgReader_resize_struct";
+			}
+
+			@Override
+			public String getDefaultValue() {
+				return "default";
+			}
+
+			@Override
+			public DataType getDataType() {
+				return DataType.STRUCT;
+			}
+		},*/
 		/**
 		 * Should the image be resized or not
 		 */
@@ -196,6 +219,77 @@ public class ImageFileReader extends AbstractStrategy implements IFileReadStrate
 			}
 		},
 		/**
+		 * If resizing, the mode: EXACT(exact width & height) or DYNAMIC(keep aspect ratio).
+		 */
+		RESIZE_RESIZE_MODE {
+			@Override
+			public String getParameterName() {
+				return "imgReader_resizeMode";
+			}
+
+			@Override
+			public String getDefaultValue() {
+				return "DYNAMIC";
+			}
+
+			@Override
+			public DataType getDataType() {
+				return DataType.STRING;
+			}
+			@Override
+			public Constraint[] getConstraints(){
+				final EnumConstraint cons = new EnumConstraint();
+				cons.addLiteral("DYNAMIC");
+				cons.addLiteral("EXACT");
+				return new Constraint[]{cons};
+			}
+		},
+		/**
+		 * If resizing, the mode: EXACT(exact width & height) or DYNAMIC(keep aspect ratio).
+		 */
+		RESIZE_RESIZE_PADDING {
+			@Override
+			public String getParameterName() {
+				return "imgReader_resizePadding";
+			}
+
+			@Override
+			public String getDefaultValue() {
+				return "NOPADDING";
+			}
+
+			@Override
+			public DataType getDataType() {
+				return DataType.STRING;
+			}
+			@Override
+			public Constraint[] getConstraints(){
+				final EnumConstraint cons = new EnumConstraint();
+				cons.addLiteral("PADDING");
+				cons.addLiteral("NOPADDING");
+				return new Constraint[]{cons};
+			}
+		},
+		/**
+		 * If resizing, the mode: EXACT(exact width & height) or DYNAMIC(keep aspect ratio).
+		 */
+		RESIZE_RESIZE_PADDING_COLOR {
+			@Override
+			public String getParameterName() {
+				return "imgReader_resizePaddingColor";
+			}
+
+			@Override
+			public String getDefaultValue() {
+				return "FFFFFF";
+			}
+
+			@Override
+			public DataType getDataType() {
+				return DataType.STRING;
+			}
+		},
+		/**
 		 * Should the image meta data be added (if any)
 		 */
 		IMAGE_META {
@@ -240,7 +334,7 @@ public class ImageFileReader extends AbstractStrategy implements IFileReadStrate
 	public void init(final Trace trace, final Map<String,Parameter> driverParams, final IPublisher publisher)
 			throws XDSParameterException {
 		if (trace.getTraceLevel()>TraceLevel.TRACE){
-			trace.trace("ImageFileReader.init() driverParams:"+driverParams);
+			trace.trace("ImageFileReader.init() driverParams:"+driverParams,TraceLevel.TRACE);
 		}
 		this.trace = trace;
 
@@ -248,15 +342,43 @@ public class ImageFileReader extends AbstractStrategy implements IFileReadStrate
 
 		this.resize = getBoolValueFor(Parameters.RESIZE,driverParams);
 		if (this.resize){
-			this.resizeHeight = getIntValueFor(Parameters.RESIZE_HEIGTH, driverParams);
-			this.resizeWidth = getIntValueFor(Parameters.RESIZE_WIDTH, driverParams);
+			this.resizeHeight = Math.max(0, getIntValueFor(Parameters.RESIZE_HEIGTH, driverParams));
+			this.resizeWidth = Math.max(0, getIntValueFor(Parameters.RESIZE_WIDTH, driverParams));
 		}
-
-		if ((this.resize) && (this.resizeHeight<=0) && (this.resizeWidth<=0)){
-			trace.trace("Both width and height are <=0. Disabling resizing");
+		//Validate the height and width parameters. They cannot both be <=0
+		if ((this.resize) && (this.resizeHeight==0) && (this.resizeWidth==0)){
+			trace.trace("WARN: Both width and height are <=0. Disabling resizing",TraceLevel.ERROR_WARN);
 			this.resize=false;
 		}
-
+		if (this.resize){
+			this.resizeExact = "EXACT".equals(getStringValueFor(Parameters.RESIZE_RESIZE_MODE, driverParams));
+			if (resizeExact){
+				//Height and width should be > 0
+				if ((this.resizeHeight==0) || (this.resizeWidth==0)){
+					trace.trace("WARN: Width or height are <=0. Changing resize mode to from 'EXACT' to 'Max dimensions(DYNAMIC)'",TraceLevel.ERROR_WARN);
+					this.resizeExact=false;
+				}
+			}
+			if (!resizeExact){//In dynamic mode
+				final boolean doPadding = "PADDING".equals(getStringValueFor(Parameters.RESIZE_RESIZE_PADDING, driverParams));
+				if (doPadding){
+					final String colorStr = getStringValueFor(Parameters.RESIZE_RESIZE_PADDING_COLOR, driverParams);
+					if (colorStr != null){
+						final String trimmedColor = colorStr.trim();
+						if (trimmedColor.length()==6){
+							final String colorR = trimmedColor.substring(0, 2);
+							final String colorG = trimmedColor.substring(2, 4);
+							final String colorB = trimmedColor.substring(4, 6);
+							this.paddingColor = new Color(Integer.parseInt(colorR,16),Integer.parseInt(colorG,16),Integer.parseInt(colorB,16));
+						}
+					}
+					if (this.paddingColor==null){
+						trace.trace("WARN: Invalid padding color:"+colorStr+". Falling black to 000000 (black)",TraceLevel.ERROR_WARN);					
+						this.paddingColor = new Color(0,0,0);
+					}
+				}
+			}
+		}
 		this.transcode = getBoolValueFor(Parameters.TRANSCODE, driverParams);
 		if (this.transcode){
 			this.transcodeTargetFormat = getStringValueFor(Parameters.TRANSCODE_FORMAT, driverParams);
@@ -287,8 +409,6 @@ public class ImageFileReader extends AbstractStrategy implements IFileReadStrate
 		if (inputStream != null){
 			try {
 				final Map<String, String> result =  getImageDataMap();
-				//Always close the file. ONly one image is assumed.
-				close();
 				return result;
 			} catch (final NoSuchElementException e) {
 				trace.trace("Unsupported image type:" +e.getMessage(), TraceLevel.ERROR_WARN);
@@ -296,6 +416,13 @@ public class ImageFileReader extends AbstractStrategy implements IFileReadStrate
 			} catch (final IOException e) {
 				trace.trace("IOException while reading image:" +e.getMessage(), TraceLevel.ERROR_WARN);
 				throw new ReadException("IOException while reading image.",e);
+			} finally {
+				//Always close the file. Only one image is assumed.
+				try{
+					close();
+				}catch(final Exception e){
+					//We eat this exception if any. It was already traced by the close method. We only want to return the exception that happened during reading, not during closing.
+				}
 			}			
 		}else{
 			return null;
@@ -335,17 +462,55 @@ public class ImageFileReader extends AbstractStrategy implements IFileReadStrate
 		//	return new String[]{FIELD_IMAGE_BYTES,FIELD_IMG_HEIGHT,FIELD_IMG_WIDTH};
 	}
 
-	private static BufferedImage resize(final Image image, final int width, final int height, final ImageTypeSpecifier sourceType){
+	private BufferedImage resize(final Image image, final int width, final int height, final ImageTypeSpecifier sourceType){
 		final Image tmp = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
-		//image.get
-		final BufferedImage resized = sourceType.createBufferedImage(width, height);
+		final BufferedImage resized ;
+		if (paddingColor != null){
+			//We need to pad. The canvas size is resizeWidth and Height
+			resized = sourceType.createBufferedImage(resizeWidth, resizeHeight);			
+		} else {
+			resized = sourceType.createBufferedImage(width, height);
+		}
 		//final BufferedImage resized = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		final Graphics2D g2d = resized.createGraphics();
-		g2d.drawImage(tmp, 0, 0, null);
+		if (paddingColor != null){
+			g2d.setBackground(paddingColor);//The color used to draw the transparency of the image
+			g2d.setColor(paddingColor);//The color used to draw the rectangle
+			g2d.fillRect(0, 0, resizeWidth, resizeHeight);
+			g2d.drawImage(tmp, (resizeWidth-width)/2, (resizeHeight-height)/2, paddingColor, null);//No need for an observer since the image is already buffered
+		}else{
+			g2d.drawImage(tmp, 0, 0, null, null);//No need for an observer since the image is already buffered
+		}
 		g2d.dispose();
 		return resized;
 	}
 
+
+	private ImageTranscoder getTranscoder(final ImageReader imgReader, final Iterator<ImageWriter> writerIter){
+		while (writerIter.hasNext()) {
+			final ImageWriter aWriter = writerIter.next();
+			final Iterator<ImageTranscoder> transcoders = ImageIO.getImageTranscoders(imgReader, aWriter);
+			if (transcoders.hasNext()){
+				trace.trace("Transcoder found.");
+				return transcoders.next();
+			}
+		}
+		return null;
+	}
+
+	private ImageTranscoder getMetaDataTranscoder(final ImageReader imgReader, final ImageTypeSpecifier imageSrcDestType) throws IOException, ReadException{
+		if (transcodeTargetFormat==null) {
+			return null;
+		}
+		final Iterator<ImageWriter> writers = ImageIO.getImageWriters(imageSrcDestType, transcodeTargetFormat);
+		//First try to get a transcoder
+		ImageTranscoder transcoder = getTranscoder(imgReader, writers);
+		if (transcoder==null){
+			final Iterator<ImageWriter> writers2 = ImageIO.getImageWritersByFormatName(transcodeTargetFormat);
+			transcoder = getTranscoder(imgReader, writers2);
+		}
+		return transcoder;
+	}
 
 	/**
 	 * 
@@ -379,15 +544,33 @@ public class ImageFileReader extends AbstractStrategy implements IFileReadStrate
 		if (resize){
 			//Calculate the new size
 			int desiredWidth=resizeWidth;
-			int desiredHeight=resizeHeight;
-			if (desiredWidth==0){
-				//Calculate the width
-				desiredWidth = (imgWidth*desiredHeight)/imgHeight;
-			}else if (desiredHeight==0){
-				desiredHeight = (imgHeight*desiredWidth)/imgWidth;
+			int desiredHeight=resizeHeight;				
+			if (!resizeExact){
+				if (desiredWidth==0){
+					//Calculate the width
+					desiredWidth = (imgWidth*desiredHeight)/imgHeight;
+				}else if (desiredHeight==0){
+					desiredHeight = (imgHeight*desiredWidth)/imgWidth;
+				}else{
+					//Max bounds
+					final float ratioX = (float)desiredWidth / imgWidth;
+					final float ratioY = (float)desiredHeight / imgHeight;
+					if (ratioX<=ratioY){
+						//take the smallest one, so update width to ratio of height
+						desiredHeight = (int)(imgHeight*ratioX);
+					}else{
+						desiredWidth = (int)(imgWidth*ratioY);						
+					}
+				}
+
 			}
-			result.put(FIELD_IMAGE_WIDTH, Integer.toString(desiredWidth));
-			result.put(FIELD_IMAGE_HEIGHT, Integer.toString(desiredHeight));
+			if (paddingColor==null){//No padding: wet the calculated image dimentions
+				result.put(FIELD_IMAGE_WIDTH, Integer.toString(desiredWidth));
+				result.put(FIELD_IMAGE_HEIGHT, Integer.toString(desiredHeight));
+			}else{//With padding: wet the canvas dimantions
+				result.put(FIELD_IMAGE_WIDTH, Integer.toString(resizeWidth));
+				result.put(FIELD_IMAGE_HEIGHT, Integer.toString(resizeHeight));				
+			}
 			scaledImage = resize(img, desiredWidth,desiredHeight, imageSrcDestType);
 		}else{
 			//No resizing
@@ -456,12 +639,18 @@ public class ImageFileReader extends AbstractStrategy implements IFileReadStrate
 				}
 			}*/
 		}
-		final IIOImage image = new IIOImage(scaledImage, null, srcImageMetaData);
-
 		final ImageWriteParam writeParams = imgWriter.getDefaultWriteParam();
-		writeParams.setDestinationType(imageSrcDestType);
+		//writeParams.setDestinationType(imageSrcDestType);
 		writeParams.setDestinationType(ImageTypeSpecifier.createFromRenderedImage(scaledImage));
-		imgWriter.write(srcImageMetaData, image, writeParams);
+		final ImageTranscoder metaDataTranscoder = getMetaDataTranscoder(imgReader, imageSrcDestType);
+		final IIOMetadata destImageMetaData;
+		if (metaDataTranscoder != null){
+			destImageMetaData = metaDataTranscoder.convertImageMetadata(srcImageMetaData, imageSrcDestType, writeParams);
+		}else{
+			destImageMetaData = srcImageMetaData;
+		}
+		final IIOImage image = new IIOImage(scaledImage, null, destImageMetaData);
+		imgWriter.write(destImageMetaData, image, writeParams);
 
 		imageos.close();
 		baos.flush();

@@ -92,6 +92,7 @@ public class ImageFileReaderTester extends AbstractStrategyTest{
 		//No clue how the Parameter works, so just overwrite what we need...
 		params.putParameter(ImageFileReader.Parameters.IMAGE_META.getParameterName(), false);
 		params.putParameter(ImageFileReader.Parameters.RESIZE.getParameterName(), false);
+		params.putParameter(ImageFileReader.Parameters.RESIZE_RESIZE_MODE.getParameterName(), "DYNAMIC");
 		params.putParameter(ImageFileReader.Parameters.TRANSCODE.getParameterName(), false);
 
 		final File f = temporaryFolder.newFile();
@@ -141,6 +142,8 @@ public class ImageFileReaderTester extends AbstractStrategyTest{
 		//No clue how the Parameter works, so just overwrite what we need...
 		params.putParameter(ImageFileReader.Parameters.IMAGE_META.getParameterName(), true);
 		params.putParameter(ImageFileReader.Parameters.RESIZE.getParameterName(), false);
+		params.putParameter(ImageFileReader.Parameters.RESIZE_RESIZE_MODE.getParameterName(), "DYNAMIC");
+
 		params.putParameter(ImageFileReader.Parameters.TRANSCODE.getParameterName(), false);
 
 		final File f = temporaryFolder.newFile();
@@ -190,8 +193,10 @@ public class ImageFileReaderTester extends AbstractStrategyTest{
 		//No clue how the Parameter works, so just overwrite what we need...
 		params.putParameter(ImageFileReader.Parameters.IMAGE_META.getParameterName(), false);
 		params.putParameter(ImageFileReader.Parameters.RESIZE.getParameterName(), true);
+		params.putParameter(ImageFileReader.Parameters.RESIZE_RESIZE_MODE.getParameterName(), "DYNAMIC");
 		params.putParameter(ImageFileReader.Parameters.RESIZE_HEIGTH.getParameterName(), 0);
 		params.putParameter(ImageFileReader.Parameters.RESIZE_WIDTH.getParameterName(), 30);
+		params.putParameter(ImageFileReader.Parameters.RESIZE_RESIZE_PADDING.getParameterName(), "NOPADDING");
 		params.putParameter(ImageFileReader.Parameters.TRANSCODE.getParameterName(), false);
 
 		final File f = temporaryFolder.newFile();
@@ -235,12 +240,75 @@ public class ImageFileReaderTester extends AbstractStrategyTest{
 		assertEquals(imgReader.getFormatName(), format);		
 	}
 
-	private void testResizeNoAspectRatio(final String format, final byte[] srcImgBytes) throws Exception{
+	private void testResizeWithPadding(final String format, final byte[] srcImgBytes) throws Exception{
 		final Trace trace = new Trace(">");
 		final ParamMap params = new ParamMap();
 		//No clue how the Parameter works, so just overwrite what we need...
 		params.putParameter(ImageFileReader.Parameters.IMAGE_META.getParameterName(), false);
 		params.putParameter(ImageFileReader.Parameters.RESIZE.getParameterName(), true);
+		params.putParameter(ImageFileReader.Parameters.RESIZE_RESIZE_MODE.getParameterName(), "DYNAMIC");
+		params.putParameter(ImageFileReader.Parameters.RESIZE_HEIGTH.getParameterName(), 100);
+		params.putParameter(ImageFileReader.Parameters.RESIZE_WIDTH.getParameterName(), 30);
+		params.putParameter(ImageFileReader.Parameters.RESIZE_RESIZE_PADDING.getParameterName(), "PADDING");
+		params.putParameter(ImageFileReader.Parameters.RESIZE_RESIZE_PADDING_COLOR.getParameterName(), "0000FF");
+		params.putParameter(ImageFileReader.Parameters.TRANSCODE.getParameterName(), false);
+
+		final File f = temporaryFolder.newFile();
+		f.deleteOnExit();
+		createImgFile(f, srcImgBytes);
+
+		//Start the test
+		final ImageFileReader testSubject = new ImageFileReader();
+		testSubject.init(trace,params,publisher);
+		testSubject.openFile(f);
+		final Map<String, String> record = testSubject.readRecord();
+
+		//An imagefile should contain only one record
+		assertNull(testSubject.readRecord());
+
+		assertEquals(record.keySet().size(), 7);
+		assertEquals(record.get(ImageFileReader.FIELD_IMAGE_FORMAT), format);
+		assertEquals(record.get(ImageFileReader.FIELD_IMAGE_HEIGHT), "100");
+		assertEquals(record.get(ImageFileReader.FIELD_IMAGE_WIDTH), "30");
+		assertEquals(record.get(ImageFileReader.FIELD_SRC_FORMAT), format);
+		assertEquals(record.get(ImageFileReader.FIELD_SRC_HEIGHT), "10");
+		assertEquals(record.get(ImageFileReader.FIELD_SRC_WIDTH), "10");
+
+		//Now validate the image
+		final byte[] imgBytes = decoder.decode(record.get(ImageFileReader.FIELD_IMAGE_BYTES));
+		final ByteArrayInputStream bais = new ByteArrayInputStream(imgBytes);
+		final ImageInputStream imgInputStream = ImageIO.createImageInputStream(bais);
+		final ImageReader imgReader = ImageIO.getImageReaders(imgInputStream).next();
+		imgReader.setInput(imgInputStream, false, false);
+		ImageTypeSpecifier imageSrcDestType = imgReader.getRawImageType(0);
+		if (imageSrcDestType==null){
+			imageSrcDestType = imgReader.getImageTypes(0).next();
+		}
+		final ImageReadParam imageReadParams = imgReader.getDefaultReadParam();
+		imageReadParams.setDestinationType(imageSrcDestType);
+
+		final BufferedImage img = imgReader.read(0, imageReadParams);
+
+		assertEquals(img.getWidth(), 30);
+		assertEquals(img.getHeight(), 100);
+		assertEquals(imgReader.getFormatName(), format);
+
+		final File tempFile = File.createTempFile("prefix-", format);
+		System.out.println("Saving to file:"+tempFile.getAbsolutePath());
+		final FileOutputStream fos = new FileOutputStream(tempFile);
+		fos.write(imgBytes);
+		fos.close();
+
+
+	}
+
+	private void testResizeNoARImage(final String format, final byte[] srcImgBytes) throws Exception{
+		final Trace trace = new Trace(">");
+		final ParamMap params = new ParamMap();
+		//No clue how the Parameter works, so just overwrite what we need...
+		params.putParameter(ImageFileReader.Parameters.IMAGE_META.getParameterName(), false);
+		params.putParameter(ImageFileReader.Parameters.RESIZE.getParameterName(), true);
+		params.putParameter(ImageFileReader.Parameters.RESIZE_RESIZE_MODE.getParameterName(), "EXACT");
 		params.putParameter(ImageFileReader.Parameters.RESIZE_HEIGTH.getParameterName(), 40);
 		params.putParameter(ImageFileReader.Parameters.RESIZE_WIDTH.getParameterName(), 30);
 		params.putParameter(ImageFileReader.Parameters.TRANSCODE.getParameterName(), false);
@@ -292,6 +360,7 @@ public class ImageFileReaderTester extends AbstractStrategyTest{
 		//No clue how the Parameter works, so just overwrite what we need...
 		params.putParameter(ImageFileReader.Parameters.IMAGE_META.getParameterName(), false);
 		params.putParameter(ImageFileReader.Parameters.RESIZE.getParameterName(), false);
+		params.putParameter(ImageFileReader.Parameters.RESIZE_RESIZE_MODE.getParameterName(), "DYNAMIC");
 		params.putParameter(ImageFileReader.Parameters.TRANSCODE.getParameterName(), true);
 		params.putParameter(ImageFileReader.Parameters.TRANSCODE_FORMAT.getParameterName(), destFormat);
 
@@ -398,21 +467,38 @@ public class ImageFileReaderTester extends AbstractStrategyTest{
 
 	@Test
 	public void testResizeNoARImagePNG() throws Exception {
-		testResizeNoAspectRatio("png", PNG_IMG);
+		testResizeNoARImage("png", PNG_IMG);
 	}
 
 	@Test
 	public void testResizeNoARImageJPG() throws Exception {
-		testResizeNoAspectRatio("JPEG", JPG_IMG);
+		testResizeNoARImage("JPEG", JPG_IMG);
 	}
 
 	@Test
 	public void testResizeNoARImageGIF() throws Exception {
-		testResizeNoAspectRatio("gif", GIF_IMG);
+		testResizeNoARImage("gif", GIF_IMG);
 	}
 	@Test
 	public void testResizeNoARImageBMP() throws Exception {
-		testResizeNoAspectRatio("bmp", BMP_IMG);
+		testResizeNoARImage("bmp", BMP_IMG);
+	}
+	@Test
+	public void testResizeWithPaddingBMP() throws Exception {
+		testResizeWithPadding("bmp", BMP_IMG);
+	}
+
+	@Test
+	public void testResizeWithPaddingGIF() throws Exception {
+		testResizeWithPadding("gif", GIF_IMG);
+	}
+	@Test
+	public void testResizeWithPaddingJPG() throws Exception {
+		testResizeWithPadding("JPEG", JPG_IMG);
+	}
+	@Test
+	public void testResizeWithPaddingPNG() throws Exception {
+		testResizeWithPadding("png", PNG_IMG);
 	}
 
 	@Test
