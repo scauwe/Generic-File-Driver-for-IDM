@@ -184,7 +184,7 @@ public class FileDriverPublicationShimImpl implements IPublisherImplStrategy, Xm
 		/**
 		 * Attributes that should be marked as sensitive.
 		 */
-		SENSITIVE_ATTRIBUTES("pub_sensitiveFields","",DataType.STRING),
+		SENSITIVE_ATTRIBUTES("pub_sensitiveAttributes","",DataType.STRING),
 		/**
 		 * The metadata fileds that need to be added to the event
 		 */
