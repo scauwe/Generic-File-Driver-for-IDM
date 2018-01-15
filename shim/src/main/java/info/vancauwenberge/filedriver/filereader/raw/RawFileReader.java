@@ -98,7 +98,7 @@ public class RawFileReader extends AbstractStrategy implements IFileReadStrategy
 
 			@Override
 			public String getDefaultValue() {
-				return "";
+				return "0";
 			}
 
 			@Override
@@ -171,9 +171,14 @@ public class RawFileReader extends AbstractStrategy implements IFileReadStrategy
 			}
 		}
 
-		this.maxFileSize = getIntValueFor(Parameters.MAX_SIZE, driverParams);
-		if (maxFileSize<=0){
-			maxFileSize = Integer.MAX_VALUE;
+		final String maxSizeStr = getStringValueFor(Parameters.MAX_SIZE, driverParams);
+		if ((maxSizeStr==null) || maxSizeStr.trim().equals("")){
+			maxFileSize = Integer.MAX_VALUE;			
+		}else{
+			this.maxFileSize = Integer.parseInt(maxSizeStr);
+			if (maxFileSize<=0){
+				maxFileSize = Integer.MAX_VALUE;
+			}
 		}
 	}
 

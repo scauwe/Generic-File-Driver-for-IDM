@@ -45,11 +45,15 @@ public class CSVFileWriter extends AbstractStrategy implements IFileWriteStrateg
 	 * Enum holding the general subscriber parameters
 	 */
 
-	private enum Parameters implements IStrategyParameters{
+	protected enum Parameters implements IStrategyParameters{
 		/**
 		 * Should a header record be written
 		 */
 		CSV_FILE_WRITE_HEADER("csvWriter_WriteHeader","true",DataType.BOOLEAN),
+		/**
+		 * Should we always quote the fields
+		 */
+		CSV_FILE_QUOTE_ALWAYS("csvWriter_QuoteAlways","false",DataType.BOOLEAN),
 		/**
 		 * Seperator to use
 		 */
@@ -104,6 +108,7 @@ public class CSVFileWriter extends AbstractStrategy implements IFileWriteStrateg
 	private File theFile;
 	private String[] schema;
 	private Trace trace;
+	private boolean quoteAlways;
 
 
 	/* (non-Javadoc)
@@ -117,7 +122,7 @@ public class CSVFileWriter extends AbstractStrategy implements IFileWriteStrateg
 		trace.trace("Initialization.", TraceLevel.TRACE);
 		encoding = getStringValueFor(Parameters.CSV_FILE_WRITE_ENCODING,driverParams);//.get(CSV_FILE_WRITE_ENCODING).toString();
 		writeHeader = getBoolValueFor(Parameters.CSV_FILE_WRITE_HEADER,driverParams);//.get(CSV_FILE_WRITE_HEADER).toBoolean().booleanValue();
-
+		this.quoteAlways = getBoolValueFor(Parameters.CSV_FILE_QUOTE_ALWAYS, driverParams);
 		flushEvryLine = getBoolValueFor(Parameters.CSV_FILE_WRITE_FLSUH,driverParams);//.get(CSV_FILE_WRITE_FLSUH).toBoolean().booleanValue();
 
 		//Tabs and spaces in the driver config are removed by Designer, so we need to use a special 'encoding' for the tab character.
@@ -142,6 +147,7 @@ public class CSVFileWriter extends AbstractStrategy implements IFileWriteStrateg
 		trace.trace(" WriteHeader:"+writeHeader, TraceLevel.TRACE);
 		trace.trace(" FlushEvryLine:"+flushEvryLine, TraceLevel.TRACE);
 		trace.trace(" Seperator:"+seperator, TraceLevel.TRACE);
+		trace.trace(" AlwaysQuote:"+quoteAlways, TraceLevel.TRACE);
 	}
 
 
@@ -178,7 +184,7 @@ public class CSVFileWriter extends AbstractStrategy implements IFileWriteStrateg
 		//if it contains a double quote: escape with double quote
 		String temp = input.replaceAll("\"","\"\"");
 		//if it contains a double quote, the seperator or newline: surround with double quote
-		if ((temp.indexOf('"')>=0) | (temp.indexOf('\n')>=0) | (temp.indexOf(seperator)>=0)) {
+		if (quoteAlways || (temp.indexOf('"')>=0) || (temp.indexOf('\n')>=0) || (temp.indexOf(seperator)>=0)) {
 			temp = "\""+temp+"\"";
 		}
 		return temp;
