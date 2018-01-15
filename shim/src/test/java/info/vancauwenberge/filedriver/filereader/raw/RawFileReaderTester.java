@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2007, 2017 Stefaan Van Cauwenberge
+ * Copyright (c) 2007, 2018 Stefaan Van Cauwenberge
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0 (the "License"). If a copy of the MPL was not distributed with this
@@ -11,7 +11,7 @@
  *
  * The Initial Developer of the Original Code is
  * Stefaan Van Cauwenberge. Portions created by
- *  the Initial Developer are Copyright (C) 2007, 2017 by
+ *  the Initial Developer are Copyright (C) 2007, 2018 by
  * Stefaan Van Cauwenberge. All Rights Reserved.
  *
  * Contributor(s): none so far.
