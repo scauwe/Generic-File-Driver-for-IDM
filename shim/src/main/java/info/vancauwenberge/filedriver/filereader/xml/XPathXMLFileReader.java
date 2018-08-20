@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2007-2017 Stefaan Van Cauwenberge
+ * Copyright (c) 2007, 2018 Stefaan Van Cauwenberge
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0 (the "License"). If a copy of the MPL was not distributed with this
@@ -11,7 +11,7 @@
  *
  * The Initial Developer of the Original Code is
  * Stefaan Van Cauwenberge. Portions created by
- *  the Initial Developer are Copyright (C) 2007-2016 by
+ *  the Initial Developer are Copyright (C) 2007, 2018 by
  * Stefaan Van Cauwenberge. All Rights Reserved.
  *
  * Contributor(s): none so far.
@@ -141,7 +141,7 @@ public class XPathXMLFileReader extends AbstractStrategy implements IFileReadStr
 			final String xPathExpressionsParam = getStringValueFor(Parameters.XPATH_EXPRESSIONS,driverParams);
 			final String[] expressions = xPathExpressionsParam.split(",");
 			this.xPathExpressions = new ArrayList<XPathExpression>();
-			final List<String> fieldNames = new ArrayList<>();
+			final List<String> fieldNames = new ArrayList<String>();
 			final StringBuilder thisExpr = new StringBuilder();
 			for (final String anExpression : expressions) {
 				try{
@@ -211,7 +211,7 @@ public class XPathXMLFileReader extends AbstractStrategy implements IFileReadStr
 					try {
 						final NodeList nodes = (NodeList) xpathRecordNodeSet.evaluate(doc, XPathConstants.NODESET);
 						for (int i = 0; i < nodes.getLength(); i++) {
-							final Map<String,String> record = new HashMap<>();
+							final Map<String,String> record = new HashMap<String, String>();
 							for (int j = 0; j < xPathExpressions.size(); j++) {
 								final XPathExpression anExpression = xPathExpressions.get(j);
 								String value=null;

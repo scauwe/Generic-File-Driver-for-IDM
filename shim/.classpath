@@ -2,12 +2,16 @@
 <classpath>
 	<classpathentry kind="src" path="src/main/java"/>
 	<classpathentry kind="src" path="src/test/java"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7">
+		<accessrules>
+			<accessrule kind="discouraged" pattern="**/JPEGMetadata"/>
+		</accessrules>
+	</classpathentry>
 	<classpathentry kind="lib" path="lib/dirxml.jar"/>
 	<classpathentry kind="lib" path="lib/js.jar"/>
 	<classpathentry kind="lib" path="lib/nxsl.jar"/>
 	<classpathentry kind="lib" path="lib/poi-3.7-20101029.jar"/>
-	<classpathentry kind="lib" path="lib/XDS.jar"/>
+	<classpathentry kind="lib" path="lib/XDS.jar" sourcepath="lib/XDS.src.zip"/>
 	<classpathentry kind="lib" path="lib/xp.jar"/>
 	<classpathentry kind="lib" path="lib/dirxml_misc.jar"/>
 	<classpathentry kind="lib" path="lib/quartz-2.2.1.jar"/>
