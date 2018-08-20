@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2007, 2017 Stefaan Van Cauwenberge
+ * Copyright (c) 2007, 2018 Stefaan Van Cauwenberge
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0 (the "License"). If a copy of the MPL was not distributed with this
@@ -11,7 +11,7 @@
  *
  * The Initial Developer of the Original Code is
  * Stefaan Van Cauwenberge. Portions created by
- *  the Initial Developer are Copyright (C) 2007, 2017 by
+ *  the Initial Developer are Copyright (C) 2007, 2018 by
  * Stefaan Van Cauwenberge. All Rights Reserved.
  *
  * Contributor(s): none so far.
@@ -254,7 +254,7 @@ public class ExternalExec extends AbstractStrategy implements IPostProcessStrate
 		this.maxWaitTime = getIntValueFor(Parameters.EXTERNALEXEC_MAXWAITTIMESECONDS, driverParams);
 		final String command = getStringValueFor(Parameters.EXTERNALEXEC_COMMAND,driverParams);
 		if (!"".equals(command)){
-			commandAndParams = new ArrayList<>();
+			commandAndParams = new ArrayList<String>();
 			//Parse the command as a CSV line with space as a separator
 			final CSVFileParser parser = new CSVFileParser(' ', new String[]{}, true, false, false);
 			parser.resetParser();
@@ -319,7 +319,7 @@ public class ExternalExec extends AbstractStrategy implements IPostProcessStrate
 				final File parentPathFile = result.getParentFile();
 				final String parentPath = parentPathFile.getCanonicalPath();//Name only
 
-				final List<String> commands = new ArrayList<>(commandAndParams.size());
+				final List<String> commands = new ArrayList<String>(commandAndParams.size());
 				for (final String aCmd : commandAndParams) {
 					String thisValue = aCmd.replace("$PARENTPATH$", parentPath)
 							.replace("$FILENAME$", fileName)
