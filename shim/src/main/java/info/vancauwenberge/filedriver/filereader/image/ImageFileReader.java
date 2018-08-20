@@ -175,7 +175,7 @@ public class ImageFileReader extends AbstractStrategy implements IFileReadStrate
 			}
 			@Override
 			public Constraint[] getConstraints(){
-				final EnumConstraint cons = new EnumConstraint();
+				final EnumConstraint cons = new EnumConstraint(String.CASE_INSENSITIVE_ORDER);
 				cons.addLiterals(ImageIO.getWriterFormatNames());
 				return new Constraint[]{cons};
 			}
@@ -462,7 +462,7 @@ public class ImageFileReader extends AbstractStrategy implements IFileReadStrate
 		//	return new String[]{FIELD_IMAGE_BYTES,FIELD_IMG_HEIGHT,FIELD_IMG_WIDTH};
 	}
 
-	private BufferedImage resize(final Image image, final int width, final int height, final ImageTypeSpecifier sourceType){
+	private BufferedImage resize(final BufferedImage image, final int width, final int height, final ImageTypeSpecifier sourceType){
 		final Image tmp = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
 		final BufferedImage resized ;
 		if (paddingColor != null){

@@ -106,7 +106,7 @@ public class CSVFileWriterTester extends AbstractStrategyTest{
 
 		final String result = doTestNormal(trace, params);
 
-		assertEquals(result,"field1;field2;field3"+System.getProperty("line.separator")+"value1;value2;value3"+System.getProperty("line.separator"));
+		assertEquals(result,"field1;field2;field3"+System.getProperty("line.separator")+"\"value1\nnewline\";\"value2\"\"quote\";value3"+System.getProperty("line.separator"));
 	}
 
 
@@ -125,7 +125,8 @@ public class CSVFileWriterTester extends AbstractStrategyTest{
 		final String result = doTestNormal(trace, params);
 
 		//The file should contain only one record.
-		assertEquals(result,"\"field1\";\"field2\";\"field3\""+System.getProperty("line.separator")+"\"value1\";\"value2\";\"value3\""+System.getProperty("line.separator"));
+		//Potential issue: the \n used for the record seperator is platform specific, the \n in the field value is not...
+		assertEquals(result,"\"field1\";\"field2\";\"field3\""+System.getProperty("line.separator")+"\"value1\nnewline\";\"value2\"\"quote\";\"value3\""+System.getProperty("line.separator"));
 
 	}
 	private String doTestNormal(final Trace trace, final ParamMap params)
@@ -137,8 +138,8 @@ public class CSVFileWriterTester extends AbstractStrategyTest{
 		testSubject.init(trace,params,driver);
 		testSubject.openFile(f);
 		final Map<String, String> record = new HashMap<String, String>();
-		record.put("field1", "value1");
-		record.put("field2", "value2");
+		record.put("field1", "value1\nnewline");
+		record.put("field2", "value2\"quote");
 		record.put("field3", "value3");
 		testSubject.writeRecord(record);
 		testSubject.close();

@@ -402,7 +402,7 @@ public class ImageFileReaderTester extends AbstractStrategyTest{
 
 		assertEquals(img.getWidth(), 10);
 		assertEquals(img.getHeight(), 10);
-		assertEquals(imgReader.getFormatName(), destFormat);		
+		assertEquals(imgReader.getFormatName().toLowerCase(), destFormat.toLowerCase());
 	}
 
 	@Test
@@ -521,9 +521,9 @@ public class ImageFileReaderTester extends AbstractStrategyTest{
 	}
 	@Test
 	public void testTranscodeImageBMP() throws Exception {
-		testTranscode("bmp","png", BMP_IMG);
-		testTranscode("bmp","JPEG", BMP_IMG);
-		testTranscode("bmp","gif", BMP_IMG);
+		testTranscode("bmp","PNG", BMP_IMG);
+		testTranscode("bmp","jpeg", BMP_IMG);
+		testTranscode("bmp","GIF", BMP_IMG);
 	}
 
 	@Test(expected = ReadException.class)
