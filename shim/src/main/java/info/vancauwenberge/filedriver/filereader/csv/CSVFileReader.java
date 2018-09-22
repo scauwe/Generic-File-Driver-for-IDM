@@ -4,7 +4,7 @@
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0 (the "License"). If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *  	 
+ *
  * Software distributed under the License is distributed on an "AS IS" basis,
  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License for
  * the specific language governing rights and limitations under the License.
@@ -51,13 +51,14 @@ public class CSVFileReader extends AbstractStrategy implements IFileReadStrategy
 	private Trace trace;
 	private CSVFileParser handler;
 
-	protected enum Parameters implements IStrategyParameters{
+	protected enum Parameters implements IStrategyParameters {
+		//@formatter:off
 		SKIP_EMPTY_LINES("csvReader_skipEmptyLines","true",DataType.BOOLEAN),
 		USE_HEADER_NAMES("csvReader_UseHeaderNames","true",DataType.BOOLEAN),
 		HAS_HEADER      ("csvReader_hasHeader"     ,"true",DataType.BOOLEAN),
 		FORCED_ENCODING ("csvReader_forcedEncoding",null  ,DataType.STRING),
 		SEPERATOR       ("csvReader_seperator"     ,","   ,DataType.STRING);
-
+		//@formatter:on
 		private Parameters(final String name, final String defaultValue, final DataType dataType) {
 			this.name = name;
 			this.defaultValue = defaultValue;
@@ -69,17 +70,17 @@ public class CSVFileReader extends AbstractStrategy implements IFileReadStrategy
 		private final DataType dataType;
 
 		@Override
-		public String getParameterName(){
+		public String getParameterName() {
 			return name;
 		}
 
 		@Override
-		public String getDefaultValue(){
+		public String getDefaultValue() {
 			return defaultValue;
 		}
 
 		@Override
-		public DataType getDataType(){
+		public DataType getDataType() {
 			return dataType;
 		}
 
@@ -89,50 +90,58 @@ public class CSVFileReader extends AbstractStrategy implements IFileReadStrategy
 		}
 	}
 
-
-
-	/* (non-Javadoc)
-	 * @see info.vancauwenberge.filedriver.api.IFileReader#init(com.novell.nds.dirxml.driver.Trace, java.util.Map)
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see
+	 * info.vancauwenberge.filedriver.api.IFileReader#init(com.novell.nds.dirxml
+	 * .driver.Trace, java.util.Map)
 	 */
 	@Override
-	public void init(final Trace trace, final Map<String,Parameter> driverParams, final IPublisher publisher)
+	public void init(final Trace trace, final Map<String, Parameter> driverParams, final IPublisher publisher)
 			throws XDSParameterException {
-		if (trace.getTraceLevel()>TraceLevel.TRACE){
-			trace.trace("CSVFileReader.init() driverParams:"+driverParams);
+		if (trace.getTraceLevel() > TraceLevel.TRACE) {
+			trace.trace("CSVFileReader.init() driverParams:" + driverParams);
 		}
 		this.trace = trace;
 
-		useHeaderNames = getBoolValueFor(Parameters.USE_HEADER_NAMES,driverParams);
-		//driverParams.get(TAG_USE_HEADER_NAMES).toBoolean().booleanValue();
-		encoding = getStringValueFor(Parameters.FORCED_ENCODING,driverParams);
-		//driverParams.get(TAG_FORCED_ENCODING).toString();
-		hasHeader = getBoolValueFor(Parameters.HAS_HEADER,driverParams);
-		//driverParams.get(TAG_HAS_HEADER).toBoolean().booleanValue();
-		skipEmptyLines = getBoolValueFor(Parameters.SKIP_EMPTY_LINES,driverParams);
-		//driverParams.get(TAG_SKIP_EMPTY_LINES).toBoolean().booleanValue();
-		if ("".equals(encoding)){
-			encoding=Util.getSystemDefaultEncoding();
-			trace.trace("No encoding given. Using system default of "+encoding, TraceLevel.ERROR_WARN);
+		useHeaderNames = getBoolValueFor(Parameters.USE_HEADER_NAMES, driverParams);
+		// driverParams.get(TAG_USE_HEADER_NAMES).toBoolean().booleanValue();
+		encoding = getStringValueFor(Parameters.FORCED_ENCODING, driverParams);
+		// driverParams.get(TAG_FORCED_ENCODING).toString();
+		hasHeader = getBoolValueFor(Parameters.HAS_HEADER, driverParams);
+		// driverParams.get(TAG_HAS_HEADER).toBoolean().booleanValue();
+		skipEmptyLines = getBoolValueFor(Parameters.SKIP_EMPTY_LINES, driverParams);
+		// driverParams.get(TAG_SKIP_EMPTY_LINES).toBoolean().booleanValue();
+		if ("".equals(encoding)) {
+			encoding = Util.getSystemDefaultEncoding();
+			trace.trace("No encoding given. Using system default of " + encoding, TraceLevel.ERROR_WARN);
 		}
-		//Tabs and spaces in the driver config are removed by Designer, so we need to use a special 'encoding' for the tab character.
-		final String strSeperator = getStringValueFor(Parameters.SEPERATOR,driverParams);
-		//driverParams.get(TAG_SEPERATOR).toString();
-		if ("{tab}".equalsIgnoreCase(strSeperator)){
-			seperator='\t';
-		}else if ("{space}".equalsIgnoreCase(strSeperator)){
-			seperator=' ';
-		}else if ((strSeperator != null) && !"".equals(strSeperator)){
-			seperator = strSeperator.charAt(0);//This is a required field, so we should have at least one character
+		// Tabs and spaces in the driver config are removed by Designer, so we
+		// need to use a special 'encoding' for the tab character.
+		final String strSeperator = getStringValueFor(Parameters.SEPERATOR, driverParams);
+		// driverParams.get(TAG_SEPERATOR).toString();
+		if ("{tab}".equalsIgnoreCase(strSeperator)) {
+			seperator = '\t';
+		} else if ("{space}".equalsIgnoreCase(strSeperator)) {
+			seperator = ' ';
+		} else if ((strSeperator != null) && !"".equals(strSeperator)) {
+			seperator = strSeperator.charAt(0);// This is a required field, so
+												// we should have at least one
+												// character
 		} else {
-			throw new XDSParameterException("Invalid parameter value for seperator:"+strSeperator);
+			throw new XDSParameterException("Invalid parameter value for seperator:" + strSeperator);
 		}
 
 		schema = GenericFileDriverShim.getSchemaAsArray(driverParams);
 	}
 
-
-	/* (non-Javadoc)
-	 * @see info.vancauwenberge.filedriver.api.IFileReader#openFile(com.novell.nds.dirxml.driver.Trace, java.io.File)
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see
+	 * info.vancauwenberge.filedriver.api.IFileReader#openFile(com.novell.nds.
+	 * dirxml.driver.Trace, java.io.File)
 	 */
 	@Override
 	public void openFile(final File f) throws ReadException {
@@ -140,13 +149,13 @@ public class CSVFileReader extends AbstractStrategy implements IFileReadStrategy
 			// Start the parser that will parse this document
 			final FileInputStream fr = new FileInputStream(f);
 			final Reader reader = new UnicodeReader(fr, encoding);
-			handler = new CSVFileParser(seperator,schema,skipEmptyLines, hasHeader, useHeaderNames);
+			handler = new CSVFileParser(seperator, schema, skipEmptyLines, hasHeader, useHeaderNames);
 			handler.resetParser();
 			queue = handler.getQueue();
 
-			parsingThread = new Thread(){
+			parsingThread = new Thread() {
 				@Override
-				public void run(){
+				public void run() {
 					try {
 						handler.doParse(reader);
 					} catch (final Exception e) {
@@ -155,32 +164,40 @@ public class CSVFileReader extends AbstractStrategy implements IFileReadStrategy
 					}
 				}
 			};
-
+			parsingThread.setDaemon(true);
 			parsingThread.setName("CSVParser");
 			parsingThread.start();
 		} catch (final Exception e1) {
-			trace.trace("Exception while handeling CSV document:" +e1.getMessage(), TraceLevel.ERROR_WARN);
-			throw new ReadException("Exception while handeling CSV document:" +e1.getMessage(),e1);
+			trace.trace("Exception while handeling CSV document:" + e1.getMessage(), TraceLevel.ERROR_WARN);
+			throw new ReadException("Exception while handeling CSV document:" + e1.getMessage(), e1);
 		}
 	}
-	/* (non-Javadoc)
-	 * @see info.vancauwenberge.filedriver.api.IFileReader#readRecord(com.novell.nds.dirxml.driver.Trace)
+
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see
+	 * info.vancauwenberge.filedriver.api.IFileReader#readRecord(com.novell.nds.
+	 * dirxml.driver.Trace)
 	 */
 	@Override
-	public Map<String,String> readRecord() throws ReadException {
-		try{
+	public Map<String, String> readRecord() throws ReadException {
+		try {
 			return queue.getNextRecord();
-		}catch (final Exception e) {
+		} catch (final Exception e) {
 			throw new ReadException(e);
 		}
 	}
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 *
 	 * @see info.vancauwenberge.filedriver.api.IFileReader#close()
 	 */
 	@Override
 	public void close() throws ReadException {
 		queue = null;
-		if (parsingThread.isAlive()){
+		if (parsingThread.isAlive()) {
 			trace.trace("WARN: parsing thread is still alive...", TraceLevel.ERROR_WARN);
 			try {
 				parsingThread.join();
@@ -188,13 +205,11 @@ public class CSVFileReader extends AbstractStrategy implements IFileReadStrategy
 				e.printStackTrace();
 			}
 		}
-		//Thread is dead. Normal situation.
+		// Thread is dead. Normal situation.
 		parsingThread = null;
 
 		handler = null;
 	}
-
-
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -202,10 +217,10 @@ public class CSVFileReader extends AbstractStrategy implements IFileReadStrategy
 		return (Class<E>) Parameters.class;
 	}
 
-
 	@Override
 	public String[] getActualSchema() {
-		//The parsing is done in a seperate thread. We need to make sure that at least one record is read.
+		// The parsing is done in a seperate thread. We need to make sure that
+		// at least one record is read.
 		return handler.getCurrentSchema();
 	}
 }

@@ -4,7 +4,7 @@
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0 (the "License"). If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- *  	 
+ *
  * Software distributed under the License is distributed on an "AS IS" basis,
  * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License for
  * the specific language governing rights and limitations under the License.
@@ -19,12 +19,6 @@
  *******************************************************************************/
 
 package info.vancauwenberge.filedriver.filelocator;
-
-import info.vancauwenberge.filedriver.api.AbstractStrategy;
-import info.vancauwenberge.filedriver.api.IFileLocatorStrategy;
-import info.vancauwenberge.filedriver.filepublisher.IPublisher;
-import info.vancauwenberge.filedriver.util.TraceLevel;
-import info.vancauwenberge.filedriver.util.Util;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -42,81 +36,88 @@ import com.novell.nds.dirxml.driver.xds.DataType;
 import com.novell.nds.dirxml.driver.xds.Parameter;
 import com.novell.nds.dirxml.driver.xds.XDSParameterException;
 
+import info.vancauwenberge.filedriver.api.AbstractStrategy;
+import info.vancauwenberge.filedriver.api.IFileLocatorStrategy;
+import info.vancauwenberge.filedriver.filepublisher.IPublisher;
+import info.vancauwenberge.filedriver.util.TraceLevel;
+import info.vancauwenberge.filedriver.util.Util;
 
-public class RegExpFileLocator extends AbstractStrategy implements IFileLocatorStrategy{
-	
-	
-	
+public class RegExpFileLocator extends AbstractStrategy implements IFileLocatorStrategy {
+
 	/**
-	 * A file filter that uses regexp to find the files to process. It also checks if
-	 * the file is locked or not.
+	 * A file filter that uses regexp to find the files to process. It also
+	 * checks if the file is locked or not. <b>Not</b> thread safe, but only one
+	 * thread is using this
 	 */
 	public class RegExpFileFilter implements FilenameFilter {
 		public RegExpFileFilter() {
 			super();
 		}
+
+		@Override
 		public boolean accept(File dir, String name) {
 			regExpMatcher.reset(name);
-			if (regExpMatcher.matches())
-			{
-				trace.trace("File matches regexp:"+name, TraceLevel.DEBUG);
+			if (regExpMatcher.matches()) {
+				trace.trace("File matches regexp:" + name, TraceLevel.DEBUG);
 				File actualFile = new File(dir, name);
-				//We do not read directories...
-				if (actualFile.isDirectory())
-				{
-					trace.trace("File is a folder, ignored:"+name, TraceLevel.DEBUG);
+				// We do not read directories...
+				if (actualFile.isDirectory()) {
+					trace.trace("File is a folder, ignored:" + name, TraceLevel.DEBUG);
 					return false;
-				}
-				else
-				{
-					File f = new File(dir, name);
-					//Try to see if it locked.
+				} else {
+					// File f = new File(dir, name);
+					// Try to see if it locked.
 					FileChannel channel = null;
 					FileLock theLock = null;
+					RandomAccessFile raFileStream = null;
 					try {
-						channel = new RandomAccessFile(f, "rw").getChannel();
+						raFileStream = new RandomAccessFile(actualFile, "rw");
+						channel = raFileStream.getChannel();
 						theLock = channel.tryLock();
-						if (theLock == null)
-						{
-							trace.trace("File is locked, ignored:"+name, TraceLevel.DEBUG);
+						if (theLock == null) {
+							trace.trace("File is locked, ignored:" + name, TraceLevel.DEBUG);
 							return false;
-						}
-						else{
-							theLock.release();
-							channel.close();
+						} else {
 							return true;
 						}
 					} catch (java.io.FileNotFoundException e) {
-						try{
-							if(theLock != null)
-								theLock.release();
-							if (channel != null)
-								channel.close();
-						}catch (Exception eIgnore) {
-						}
-						//RandomAccessFile throws FileNotFound when the file is locked
-						trace.trace("File is locked, ignored:"+name, TraceLevel.DEBUG);
+						// RandomAccessFile throws FileNotFound when the file is
+						// locked
+						trace.trace("File is locked, ignored:" + name, TraceLevel.DEBUG);
 						return false;
-					} catch(Exception e){
-						try{
-							if(theLock != null)
-								theLock.release();
-							if (channel != null)
-								channel.close();
-						}catch (Exception eIgnore) {
-						}
+					} catch (Exception e) {
+						// No clue why this. Return false but print stack trace.
 						Util.printStackTrace(trace, e);
 						return false;
+					} finally {
+						if (theLock != null) {
+							try {
+								theLock.release();
+							} catch (Exception eIgnore) {
+							}
+						}
+						if (channel != null) {
+							try {
+								channel.close();
+							} catch (Exception eIgnore) {
+							}
+						}
+						if (raFileStream != null) {
+							try {
+								raFileStream.close();
+							} catch (Exception eIgnore) {
+							}
+						}
 					}
 				}
-			}else{
-				trace.trace("File does not match regexp, ignored:"+name, TraceLevel.DEBUG);
+			} else {
+				trace.trace("File does not match regexp, ignored:" + name, TraceLevel.DEBUG);
 			}
 			return false;
 		}
 	}
 
-	private enum Parameters implements IStrategyParameters{
+	private enum Parameters implements IStrategyParameters {
 		/**
 		 * Source folder parameter
 		 */
@@ -145,21 +146,24 @@ public class RegExpFileLocator extends AbstractStrategy implements IFileLocatorS
 				return ".*";
 			}
 		};
-		
+
+		@Override
 		public abstract String getParameterName();
 
+		@Override
 		public abstract String getDefaultValue();
 
+		@Override
 		public DataType getDataType() {
 			return DataType.STRING;
 		}
 
+		@Override
 		public Constraint[] getConstraints() {
 			return null;
 		}
 	}
-	
-	
+
 	/**
 	 * Folder to scan for files-to-process
 	 */
@@ -169,19 +173,21 @@ public class RegExpFileLocator extends AbstractStrategy implements IFileLocatorS
 	 */
 	private Matcher regExpMatcher = null;
 	private Trace trace;
+	private FilenameFilter filter;
 
-	
-	
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 *
 	 * @see info.vancauwenberge.filedriver.api.IFileLocator#getNextFile()
 	 */
+	@Override
 	public File[] getFileList() {
-		trace.trace("getFileList start ("+sourceFolder+")", TraceLevel.TRACE);
-		//Get the next file object.
+		trace.trace("getFileList start (" + sourceFolder + ")", TraceLevel.TRACE);
+		// Get the next file object.
 		File f = new File(sourceFolder);
-		String [] fileList = f.list(getFileFilter());
-		if (fileList != null && fileList.length>0){
-			//Transform the list of strings to a list of files
+		String[] fileList = f.list(filter);
+		if ((fileList != null) && (fileList.length > 0)) {
+			// Transform the list of strings to a list of files
 			File[] files = new File[fileList.length];
 			for (int i = 0; i < fileList.length; i++) {
 				String fileName = fileList[i];
@@ -189,15 +195,17 @@ public class RegExpFileLocator extends AbstractStrategy implements IFileLocatorS
 			}
 			trace.trace("getFileList done", TraceLevel.TRACE);
 			return files;
-		} else if (fileList==null){
-			trace.trace("FileList is null. Will try again in next polling cycle.", TraceLevel.ERROR_WARN);			
+		} else if (fileList == null) {
+			trace.trace("FileList is null. Will try again in next polling cycle.", TraceLevel.ERROR_WARN);
 		}
 		trace.trace("getFileList done", TraceLevel.TRACE);
 		return null;
 	}
 
 	/**
-	 * Return the file filter to use. Overwrite if you want to change the default RegExpFileFilter.
+	 * Return the file filter to use. Overwrite if you want to change the
+	 * default RegExpFileFilter.
+	 *
 	 * @param trace
 	 * @return
 	 */
@@ -206,52 +214,52 @@ public class RegExpFileLocator extends AbstractStrategy implements IFileLocatorS
 		return filter;
 	}
 
-
-	/* (non-Javadoc)
-	 * @see info.vancauwenberge.filedriver.api.IFileLocator#init(com.novell.nds.dirxml.driver.XmlDocument)
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see info.vancauwenberge.filedriver.api.IFileLocator#init(com.novell.nds.
+	 * dirxml.driver.XmlDocument)
 	 */
-	public void init(Trace trace, Map<String,Parameter> driverParams, IPublisher publisher) throws XDSParameterException{
+	@Override
+	public void init(Trace trace, Map<String, Parameter> driverParams, IPublisher publisher)
+			throws XDSParameterException {
 		this.trace = trace;
-		
-		sourceFolder = getStringValueFor(Parameters.DRIVER_PARAM_SOURCE_FOLDER,driverParams);
-		//driverParams.get(DRIVER_PARAM_SOURCE_FOLDER).toString();
-		String regExpString = getStringValueFor(Parameters.DRIVER_PARAM_REGEXP,driverParams);
-		//driverParams.get(DRIVER_PARAM_REGEXP).toString();
-		if (regExpString!=null && !"".equals(regExpString))
+
+		sourceFolder = getStringValueFor(Parameters.DRIVER_PARAM_SOURCE_FOLDER, driverParams);
+		// driverParams.get(DRIVER_PARAM_SOURCE_FOLDER).toString();
+		String regExpString = getStringValueFor(Parameters.DRIVER_PARAM_REGEXP, driverParams);
+		// driverParams.get(DRIVER_PARAM_REGEXP).toString();
+		if ((regExpString != null) && !"".equals(regExpString)) {
 			regExpMatcher = Pattern.compile(regExpString).matcher("");
-		
-		if ((sourceFolder == null) | (regExpMatcher==null))
-		{
+		}
+
+		if ((sourceFolder == null) | (regExpMatcher == null)) {
 			throwXDSParameterException(trace, "Sourcefolder nor regexp can be null.");
 		}
-		trace.trace("init:"+sourceFolder+" - "+regExpMatcher);
-		//Check if the folder is exsisting
-		//Create if needed.
+		trace.trace("init:" + sourceFolder + " - " + regExpMatcher);
+		// Check if the folder is exsisting
+		// Create if needed.
 		File f = new File(sourceFolder);
-		if (!f.exists())
-		{
+		if (!f.exists()) {
 			trace.trace("Creating source folder.", TraceLevel.DEBUG);
 			f.mkdirs();
 		}
-		if (!f.isDirectory())
-		{
+		if (!f.isDirectory()) {
 			throwXDSParameterException(trace, "Sourcefolder is not a directory.");
 		}
+		filter = getFileFilter();
 	}
 
-	private void throwXDSParameterException(Trace trace, String message) throws XDSParameterException{
+	private void throwXDSParameterException(Trace trace, String message) throws XDSParameterException {
 		trace.trace(message, TraceLevel.ERROR_WARN);
-		throw new XDSParameterException(message);			
-		
+		throw new XDSParameterException(message);
+
 	}
 
-	
-	public static void main(String[] args)
-	{
+	public static void main(String[] args) {
 		Field[] fields = File.class.getFields();
-		for (int i = 0; i < fields.length; i++) {
-			Field field = fields[i];
-			System.out.println(field.getName()+":"+field.getType()+" - "+field.isAccessible());
+		for (Field field : fields) {
+			System.out.println(field.getName() + ":" + field.getType() + " - " + field.isAccessible());
 		}
 		try {
 			System.out.println(new RegExpFileLocator().getParameterDefinitions());
