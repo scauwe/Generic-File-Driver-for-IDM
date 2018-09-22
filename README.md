@@ -15,7 +15,7 @@ Main differentiators to NetIQ’s driver:
 
 The original version I wrote in 2007 is located at http://www.novell.com/coolsolutions/tools/18671.html. Latest manual jar/package release was posted on https://www.netiq.com/communities/cool-solutions/cool_tools/generic-file-driver-idm-v-003/.
 
-##Documentation
+## Documentation
 See http://vancauwenberge.info/#txtdriver
 
 ## New features and fixes
