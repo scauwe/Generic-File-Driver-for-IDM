@@ -32,6 +32,17 @@ import info.vancauwenberge.filedriver.util.Util;
  *
  */
 public class QuartzUtil {
+	/**
+	 * Initialize quartz in another class to avoid imports of quartz when no
+	 * used.
+	 * 
+	 * @param trace
+	 * @param cronExpression
+	 * @param subscriber
+	 * @param callabck
+	 * @return
+	 * @throws Exception
+	 */
 	static org.quartz.Scheduler initQuartz(Trace trace, String cronExpression, ISubscriberShim subscriber,
 			BasicNewFileDecider callabck) throws Exception {
 		trace.trace("Initializing quartz for cron (if required)", TraceLevel.TRACE);
