@@ -4,6 +4,6 @@ Created-By: 1.6.0_24-b24 (Sun Microsystems Inc.)
 Built-By: Stefaan Van Cauwenberge
 Implementation-Vendor: VanCauwenberge.info
 Implementation-Title: Generic File Driver
-Implementation-Version: 1.2
-Built-Date: 2018-12-11 22:12:13
+Implementation-Version: 1.2b
+Built-Date: 2019-01-08 22:53:13
 
