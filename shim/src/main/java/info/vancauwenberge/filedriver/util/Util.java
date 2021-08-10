@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.reflect.Method;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.file.Files;
@@ -54,13 +55,23 @@ import com.novell.nds.dirxml.driver.xds.XDSSearchAttrElement;
 import com.novell.nds.dirxml.driver.xds.XDSStatusElement;
 import com.novell.nds.dirxml.driver.xds.util.StatusAttributes;
 
-/**
- * @author nlv10194
- *
- *         To change the template for this generated type comment go to Window -
- *         Preferences - Java - Code Generation - Code and Comments
- */
 public class Util {
+	static final boolean supportsJava7Move;
+
+	static {
+		// Calculate supportsJava7Move using java reflection
+		boolean methodFound = false;
+		try {
+			Class<?> c = Class.forName("java.nio.file.Files");
+			Method moveMethod = c.getMethod("move", new Class[] { Class.forName("java.nio.file.Path"),
+					Class.forName("java.nio.file.Path"), Class.forName("[Ljava.nio.file.CopyOption;") });
+			methodFound = (moveMethod != null);
+		} catch (Throwable e) {
+			methodFound = false;
+		}
+		supportsJava7Move = methodFound;
+	}
+
 	static public StatusLevel getStatusLevel(String level) {
 		if (StatusLevel.FATAL.equals(level)) {
 			return StatusLevel.FATAL;
@@ -160,6 +171,7 @@ public class Util {
 	public static void main(String[] args) {
 		System.out.println(StatusLevel.ERROR.compareTo(StatusLevel.WARNING));
 		System.out.println(getSystemDefaultEncoding());
+		System.out.println("supportsJava7Move:" + supportsJava7Move);
 	}
 
 	/**
@@ -275,7 +287,7 @@ public class Util {
 			Files.move(sourceFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING,
 					StandardCopyOption.ATOMIC_MOVE);
 			return true;
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			try {
 				// Next try the Files.move as a non-atomic operation
 				trace.trace(
@@ -283,7 +295,7 @@ public class Util {
 						TraceLevel.TRACE);
 				Files.move(sourceFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 				return true;
-			} catch (Exception e2) {
+			} catch (Throwable e2) {
 				Util.printStackTrace(trace, e2);
 				return false;
 			}
@@ -293,10 +305,10 @@ public class Util {
 	private static boolean moveFileJava6(Trace trace, File sourceFile, File destFile) {
 		// First try the File.renameTo as a java native operation
 		if (sourceFile.renameTo(destFile)) {
-			trace.trace("Moved via java native.", TraceLevel.TRACE);
+			trace.trace("Renamed via java native.", TraceLevel.TRACE);
 			return true;
 		} else {
-			// Next copy/paste the file. This is te least safe method.
+			// Next copy/paste the file. This is the least safe method.
 			trace.trace("Trying to move via copy-delete sequence.", TraceLevel.TRACE);
 			if (copyFile(trace, sourceFile, destFile)) {
 				if (!sourceFile.delete()) {
@@ -319,10 +331,16 @@ public class Util {
 	 * @return
 	 */
 	public static boolean moveFile(Trace trace, File sourceFile, File destFile) {
-		if (!moveFileJava7(trace, sourceFile, destFile)) {
+		if (supportsJava7Move) {
+			trace.trace("Java7 compatibvle move", TraceLevel.TRACE);
+			if (!moveFileJava7(trace, sourceFile, destFile)) {
+				return moveFileJava6(trace, sourceFile, destFile);
+			}
+			return true;
+		} else {
+			trace.trace("Java6 compatibvle move", TraceLevel.TRACE);
 			return moveFileJava6(trace, sourceFile, destFile);
 		}
-		return true;
 
 		// trace.trace("Moving file from " + sourceFile.getAbsolutePath() + " to
 		// " + destFile.getAbsolutePath(),
